@@ -4,7 +4,7 @@
   <artifactId>zorbage-nmr</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   <name>zorbage-nmr</name>
-  <description>zorbage-nmr: code for reading nmr data files into zorbage structures for further processing</description>
+  <description>zorbage-nmr: code for populating NMR file data into zorbage structures for further processing</description>
   <url>https://github.com/bdezonia/zorbage-nmr</url>
   <inceptionYear>2023</inceptionYear>
 
@@ -30,7 +30,7 @@
   <properties>
     <package-name>nom.bdezonia</package-name>
     <license.licenseName>mit</license.licenseName>
-    <license.projectName>zorbage-nmr: code for reading nmr data files into zorbage structures for further processing</license.projectName>
+    <license.projectName>zorbage-nmr: code for populating NMR file data into zorbage structures for further processing</license.projectName>
     <license.organizationName>zorbage-nmr authors</license.organizationName>
     <license.copyrightOwners>Barry DeZonia</license.copyrightOwners>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
