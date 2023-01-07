@@ -35,6 +35,7 @@ import nom.bdezonia.zorbage.algebra.SetFromDouble;
 import nom.bdezonia.zorbage.data.DimensionedDataSource;
 import nom.bdezonia.zorbage.data.DimensionedStorage;
 import nom.bdezonia.zorbage.dataview.TwoDView;
+import nom.bdezonia.zorbage.tuple.Tuple5;
 
 /**
  * 
@@ -57,7 +58,22 @@ public class TwoDText {
 	public static <T extends Algebra<T,U>, U extends Allocatable<U> & SetFromDouble & HasComponents>
 		DimensionedDataSource<U> read(String filename, T alg)
 	{
+		Tuple5<Integer,Long,Long,Long,Long> metadata = metadata(filename);
 
+		int numRealCols = metadata.a();
+		
+		long minX = metadata.b();
+		
+		long minY = metadata.c();
+
+		long maxX = metadata.d();
+		
+		long maxY = metadata.e();
+		
+		long xDim = maxX - minX + 1;
+		
+		long yDim = maxY - minY + 1;
+		
 		U val = alg.construct();
 		
 		FileReader fr = null;
@@ -69,51 +85,6 @@ public class TwoDText {
 			fr = new FileReader(filename);
 		
 			br = new BufferedReader(fr);
-			
-			// compute extents of data
-			
-			//System.out.println("Finding grid for "+filename);
-			
-			long minX = Long.MAX_VALUE;
-			
-			long minY = Long.MAX_VALUE;
-			
-			long maxX = Long.MIN_VALUE;
-			
-			long maxY = Long.MIN_VALUE;
-			
-			while (br.ready()) {
-				
-				String line = br.readLine();
-				
-				String[] terms = line.trim().split("\\s+");
-				
-				String xStr = terms[0];
-				
-				String yStr = terms[1];
-						
-				long x = Long.parseLong(xStr);
-				
-				long y = Long.parseLong(yStr);
-				
-				if (x < minX) minX = x;
-
-				if (x > maxX) maxX = x;
-				
-				if (y < minY) minY = y;
-				
-				if (y > maxY) maxY = y;
-			}
-			
-			br.close();
-			
-			fr.close();
-
-			// row read the numeric values into a data set
-			
-			long xDim = maxX - minX + 1;
-		
-			long yDim = maxY - minY + 1;
 			
 			DimensionedDataSource<U> data = DimensionedStorage.allocate(val, new long[] {xDim, yDim});
 			
@@ -138,8 +109,6 @@ public class TwoDText {
 				long x = Long.parseLong(xStr);
 				
 				long y = Long.parseLong(yStr);
-				
-				int numRealCols = terms.length - 2;
 				
 				for (int i = 0; i < Math.min(doubleVals.length, numRealCols); i++) {
 					
@@ -187,5 +156,84 @@ public class TwoDText {
 		}
 		
 		return null;
+	}
+
+	/**
+	 * 
+	 * @param filename
+	 * @return
+	 */
+	public static Tuple5<Integer,Long,Long,Long,Long> metadata(String filename) {
+
+		FileReader fr = null;
+		
+		BufferedReader br = null;
+		
+		try {
+			
+			fr = new FileReader(filename);
+		
+			br = new BufferedReader(fr);
+			
+			// compute extents of data
+			
+			long minX = Long.MAX_VALUE;
+		
+			long minY = Long.MAX_VALUE;
+			
+			long maxX = Long.MIN_VALUE;
+			
+			long maxY = Long.MIN_VALUE;
+			
+			int realDataColumns = 0;
+			
+			while (br.ready()) {
+				
+				String line = br.readLine();
+				
+				String[] terms = line.trim().split("\\s+");
+				
+				realDataColumns = terms.length - 2;
+				
+				String xStr = terms[0];
+				
+				String yStr = terms[1];
+						
+				long x = Long.parseLong(xStr);
+				
+				long y = Long.parseLong(yStr);
+				
+				if (x < minX) minX = x;
+	
+				if (x > maxX) maxX = x;
+				
+				if (y < minY) minY = y;
+				
+				if (y > maxY) maxY = y;
+			}
+			
+			br.close();
+			
+			fr.close();
+	
+			return new Tuple5<Integer,Long,Long,Long,Long>(realDataColumns, minX, maxX, minY, maxY);
+			
+		} catch (Exception e) {
+			
+			return null;
+			
+		} finally {
+
+			try {
+					
+				if (br != null) br.close();
+				
+				if (fr != null) fr.close();
+				
+			} catch (Exception e) {
+					
+				;
+			}
+		}
 	}
 }
