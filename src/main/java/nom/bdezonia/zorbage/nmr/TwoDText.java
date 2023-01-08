@@ -64,9 +64,9 @@ public class TwoDText {
 		
 		long minX = metadata.b();
 		
-		long minY = metadata.c();
+		long maxX = metadata.c();
 
-		long maxX = metadata.d();
+		long minY = metadata.d();
 		
 		long maxY = metadata.e();
 		
