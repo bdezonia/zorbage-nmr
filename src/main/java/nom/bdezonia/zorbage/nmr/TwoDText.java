@@ -48,12 +48,12 @@ public class TwoDText {
 	 * Read a two dimensional text file where each row is <row number> <col number> <val1> <val2> ...
 	 * into a type of datasource you pass in to this reader.
 	 * 
-	 * @param <T>
-	 * @param <U>
-	 * @param filename
-	 * @param alg
-	 * @param type
-	 * @return
+	 * @param <T> the algebra
+	 * @param <U> the types manipulated by the algebra
+	 * @param filename Name of the acsii text data file that contains numeric values.
+	 * @param alg The algebra used to create the kind of data values we want.
+	 * @param type The kind of data values we are wanting to create.
+	 * @return The file data as read into a DimensionedDataSource.
 	 */
 	public static <T extends Algebra<T,U>, U extends Allocatable<U> & SetFromDouble & HasComponents>
 		DimensionedDataSource<U> read(String filename, T alg)
@@ -110,12 +110,12 @@ public class TwoDText {
 				
 				long y = Long.parseLong(yStr);
 				
-				for (int i = 0; i < Math.min(doubleVals.length, numRealCols); i++) {
+				for (int i = 0; i < Math.min(val.componentCount(), numRealCols); i++) {
 					
 					doubleVals[i] = Double.parseDouble(terms[i + 2]);
 				}
 
-				for (int i = Math.min(doubleVals.length, numRealCols); i < val.componentCount(); i++) {
+				for (int i = Math.min(val.componentCount(), numRealCols); i < val.componentCount(); i++) {
 
 					doubleVals[i] = 0;
 				}
@@ -159,9 +159,13 @@ public class TwoDText {
 	}
 
 	/**
+	 * Get important metadata about the given ascii text data file.
+	 * Used by the file readers to know how to allocate and populate
+	 * a correct data grid.
 	 * 
-	 * @param filename
-	 * @return
+	 * @param filename Name of the acsii text data file that contains numeric values.
+	 *  
+	 * @return A tuple of (numDataCols,minXCoord,maxXCoord,minYCoord,maxYCoord).
 	 */
 	public static Tuple5<Integer,Long,Long,Long,Long> metadata(String filename) {
 

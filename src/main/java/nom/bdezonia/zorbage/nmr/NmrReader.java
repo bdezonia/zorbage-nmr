@@ -88,7 +88,8 @@ public class NmrReader {
 		
 		DataBundle bundle = new DataBundle();
 		
-		DimensionedDataSource<Float64Member> data = TwoDText.read(filename, G.DBL);
+		DimensionedDataSource<Float64Member> data =
+				TwoDText.read(filename, G.DBL);
 		
 		bundle.dbls.add(data);
 		
@@ -103,7 +104,8 @@ public class NmrReader {
 		
 		DataBundle bundle = new DataBundle();
 		
-		DimensionedDataSource<ComplexFloat64Member> data = TwoDText.read(filename, G.CDBL);
+		DimensionedDataSource<ComplexFloat64Member> data =
+				TwoDText.read(filename, G.CDBL);
 		
 		bundle.cdbls.add(data);
 		
@@ -118,7 +120,8 @@ public class NmrReader {
 		
 		DataBundle bundle = new DataBundle();
 		
-		DimensionedDataSource<QuaternionFloat64Member> data = TwoDText.read(filename, G.QDBL);
+		DimensionedDataSource<QuaternionFloat64Member> data =
+				TwoDText.read(filename, G.QDBL);
 		
 		bundle.qdbls.add(data);
 		
@@ -133,7 +136,8 @@ public class NmrReader {
 		
 		DataBundle bundle = new DataBundle();
 		
-		DimensionedDataSource<OctonionFloat64Member> data = TwoDText.read(filename, G.ODBL);
+		DimensionedDataSource<OctonionFloat64Member> data =
+				TwoDText.read(filename, G.ODBL);
 		
 		bundle.odbls.add(data);
 		
