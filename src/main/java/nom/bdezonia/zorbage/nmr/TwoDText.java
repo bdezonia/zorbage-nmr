@@ -42,11 +42,14 @@ import nom.bdezonia.zorbage.tuple.Tuple5;
  * @author Barry DeZonia
  *
  */
-public class NDText {
+public class TwoDText {
 
 	/**
 	 * Read a two dimensional text file where each row is <row number> <col number> <val1> <val2> ...
-	 * into a type of datasource you pass in to this reader.
+	 * and return a type of data source based upon the algebra you pass in to this reader. This file
+	 * layout is based on some extraction or conversion of NmrPipe data. This reader can make a gridded
+	 * data set of various types (for example reals, complexes, quaternions, octonions, data tables,
+	 * etc.) based upon the Algebra passed to this reader.
 	 * 
 	 * @param <T> the algebra
 	 * @param <U> the types manipulated by the algebra
@@ -223,6 +226,8 @@ public class NDText {
 			return new Tuple5<Integer,Long,Long,Long,Long>(realDataColumns, minX, maxX, minY, maxY);
 			
 		} catch (Exception e) {
+
+			System.out.println("Exception detected: "+e.getMessage());
 			
 			return null;
 			
