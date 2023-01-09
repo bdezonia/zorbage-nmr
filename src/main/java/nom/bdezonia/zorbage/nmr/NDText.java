@@ -42,7 +42,7 @@ import nom.bdezonia.zorbage.tuple.Tuple5;
  * @author Barry DeZonia
  *
  */
-public class TwoDText {
+public class NDText {
 
 	/**
 	 * Read a two dimensional text file where each row is <row number> <col number> <val1> <val2> ...

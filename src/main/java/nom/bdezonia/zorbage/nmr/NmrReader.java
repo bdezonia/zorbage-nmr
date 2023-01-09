@@ -51,11 +51,11 @@ public class NmrReader {
 	public static DataBundle open(String filename) {
 		
 		Tuple5<Integer,Long,Long,Long,Long> fileMetaData =
-				TwoDText.metadata(filename);
+				NDText.metadata(filename);
 		
 		int numRealColumns = fileMetaData.a();
 
-		if (numRealColumns <= 0 || numRealColumns > 8) {
+		if (numRealColumns < 1 || numRealColumns > 8) {
 
 			throw
 				new IllegalArgumentException(
@@ -89,7 +89,7 @@ public class NmrReader {
 		DataBundle bundle = new DataBundle();
 		
 		DimensionedDataSource<Float64Member> data =
-				TwoDText.read(filename, G.DBL);
+				NDText.read(filename, G.DBL);
 		
 		bundle.dbls.add(data);
 		
@@ -105,7 +105,7 @@ public class NmrReader {
 		DataBundle bundle = new DataBundle();
 		
 		DimensionedDataSource<ComplexFloat64Member> data =
-				TwoDText.read(filename, G.CDBL);
+				NDText.read(filename, G.CDBL);
 		
 		bundle.cdbls.add(data);
 		
@@ -121,7 +121,7 @@ public class NmrReader {
 		DataBundle bundle = new DataBundle();
 		
 		DimensionedDataSource<QuaternionFloat64Member> data =
-				TwoDText.read(filename, G.QDBL);
+				NDText.read(filename, G.QDBL);
 		
 		bundle.qdbls.add(data);
 		
@@ -137,7 +137,7 @@ public class NmrReader {
 		DataBundle bundle = new DataBundle();
 		
 		DimensionedDataSource<OctonionFloat64Member> data =
-				TwoDText.read(filename, G.ODBL);
+				NDText.read(filename, G.ODBL);
 		
 		bundle.odbls.add(data);
 		
