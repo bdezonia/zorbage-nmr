@@ -44,6 +44,8 @@ import nom.bdezonia.zorbage.type.real.float32.Float32Member;
  */
 public class NmrPipeReader {
 
+	private static int HEADER_BYTE_SIZE = 2048;  // 512 floats
+	
 	// do not instantiate
 	
 	private NmrPipeReader() { }
@@ -54,6 +56,9 @@ public class NmrPipeReader {
 	 * @return
 	 */
 	public static DataBundle open(String filename) {
+		
+		// BDZ NOTE: for now I am assuming that *.ft3 is the right extension.
+		// That might only be true for 3D data.
 		
 		long numFloats = getFileInfo(filename);
 		
@@ -118,12 +123,12 @@ public class NmrPipeReader {
 
 		long fileLength = file.length();
 		
-		if (fileLength < 512) {
+		if (fileLength < HEADER_BYTE_SIZE) {
 			
 			throw new IllegalArgumentException("File is too small to contain nrmpipe data: "+filename);
 		}
 		
-		long numFloats = (fileLength - 512) / 4;
+		long numFloats = (fileLength - HEADER_BYTE_SIZE) / 4;
 
 		return numFloats;
 	}
@@ -146,7 +151,7 @@ public class NmrPipeReader {
 
 			ds = new DataInputStream(fis);
 			
-			byte[] header = new byte[512];
+			byte[] header = new byte[HEADER_BYTE_SIZE];
 
 			ds.read(header);
 
