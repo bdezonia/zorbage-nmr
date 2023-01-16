@@ -143,17 +143,17 @@ public class NmrPipeReader {
 		
 		FileInputStream fis = null;
 
-		DataInputStream ds = null;
+		DataInputStream dis = null;
 		
 		try {
 			
 			fis = new FileInputStream(file);
 
-			ds = new DataInputStream(fis);
+			dis = new DataInputStream(fis);
 			
 			byte[] header = new byte[HEADER_BYTE_SIZE];
 
-			ds.read(header);
+			dis.read(header);
 
 			int a = header[8];
 			int b = header[9];
@@ -169,7 +169,7 @@ public class NmrPipeReader {
 			
 			for (long i = 0; i < numFloats; i++) {
 			
-				float val = readFloat(ds, byteSwapNeeded);
+				float val = readFloat(dis, byteSwapNeeded);
 				
 				type.setV(val);
 				
@@ -186,7 +186,7 @@ public class NmrPipeReader {
 
 			try {
 				
-				ds.close();
+				dis.close();
 				
 				fis.close();
 				
@@ -197,10 +197,10 @@ public class NmrPipeReader {
 		}
 	}
 
-	private static float readFloat(DataInputStream ds, boolean byteSwapNeeded)
+	private static float readFloat(DataInputStream dis, boolean byteSwapNeeded)
 		throws IOException
 	{
-		float val = ds.readFloat();
+		float val = dis.readFloat();
 		
 		if (byteSwapNeeded) {
 			
