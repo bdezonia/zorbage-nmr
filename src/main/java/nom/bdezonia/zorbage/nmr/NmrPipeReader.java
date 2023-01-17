@@ -67,13 +67,13 @@ public class NmrPipeReader {
 		Tuple3<String, long[], IndexedDataSource<Float32Member>> data =
 				readFloats(filename, numFloats);
 
-		if (data.a().equals("float32")) {
+		if (data.a().equals("real32")) {
 
 			NdData<Float32Member> nd = new NdData<>(data.b(), data.c());
 			
 			bundle.flts.add(nd);
 		}
-		else if (data.a().equals("cfloat32")) {
+		else if (data.a().equals("complex32")) {
 			
 			IndexedDataSource<ComplexFloat32Member> complexes =
 					Storage.allocate(G.CFLT.construct(), numFloats/2);
@@ -150,33 +150,23 @@ public class NmrPipeReader {
 			fis = new FileInputStream(file);
 
 			dis = new DataInputStream(fis);
-			
-			byte[] header = new byte[HEADER_BYTE_SIZE];
 
-			dis.read(header);
+			FileReader reader = new FileReader();
 
-			int a = header[8];
-			int b = header[9];
-			int c = header[10];
-			int d = header[11];
-			
-			float hVal =
-					Float.intBitsToFloat((a << 0) | (b << 8) | (c << 16) | (d << 24));
-			
-			boolean byteSwapNeeded = (hVal - 2.345f > 1e-6);
+			reader.readHeader(dis);
 
 			Float32Member type = G.FLT.construct();
 			
 			for (long i = 0; i < numFloats; i++) {
 			
-				float val = readFloat(dis, byteSwapNeeded);
+				float val = reader.nextDataFloat(dis);
 				
 				type.setV(val);
 				
 				data.set(i, type);
 			}
 			
-			return new Tuple3<>("float32", new long[] {numFloats}, data);
+			return new Tuple3<>("real32", new long[] {numFloats}, data);
 			
 		} catch (IOException e) {
 			
@@ -197,14 +187,57 @@ public class NmrPipeReader {
 		}
 	}
 
-	private static float readFloat(DataInputStream dis, boolean byteSwapNeeded)
-		throws IOException
-	{
-		float val = dis.readFloat();
+	private static class FileReader {
+
+		private int[] vars = new int[512];
 		
-		if (byteSwapNeeded) {
+		private boolean byteSwapNeeded = false;
+
+		void readHeader(DataInputStream dis) throws IOException {
+
+			for (int i = 0; i < vars.length; i++) {
+				vars[i] = dis.readInt();
+			}
 			
-			int bits = Float.floatToIntBits(val);
+			// endian check from a known header variable: this test idea taken from nmrglue code
+			
+			float headerVal = Float.intBitsToFloat(vars[2]);
+			
+			byteSwapNeeded =  (headerVal - 2.345f > 1e-6);
+		}
+		
+		int getHeaderInt(int index) {
+			
+			int bits = intBits(vars[index]);
+
+			return bits;
+		}
+		
+		float getHeaderFloat(int index) {
+			
+			int bits = intBits(vars[index]);
+
+			return Float.intBitsToFloat(bits);
+		}
+		
+		float nextDataFloat(DataInputStream dis) throws IOException {
+			
+			int bits = intBits(dis.readInt());
+
+			return Float.intBitsToFloat(bits);
+		}
+
+		private int intBits(int bits) {
+
+			if (byteSwapNeeded) {
+				
+				bits = swapInt(bits);
+			}
+			
+			return bits;
+		}
+		
+		private int swapInt(int bits) {
 			
 			int a = (bits >> 24) & 0xff;
 			int b = (bits >> 16) & 0xff;
@@ -213,10 +246,7 @@ public class NmrPipeReader {
 			
 			bits = (d << 24) | (c << 16) | (b << 8) | (a << 0);
 			
-			val = Float.intBitsToFloat(bits);
+			return bits;
 		}
-		
-		return val;
 	}
-
 }
