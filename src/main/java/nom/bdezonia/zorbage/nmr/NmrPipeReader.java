@@ -186,9 +186,9 @@ public class NmrPipeReader {
 
 			try {
 				
-				dis.close();
+				if (dis != null) dis.close();
 				
-				fis.close();
+				if (fis != null) fis.close();
 				
 			} catch (Exception e) {
 				
