@@ -27,6 +27,7 @@ import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.Arrays;
 
 import nom.bdezonia.zorbage.algebra.G;
 import nom.bdezonia.zorbage.data.NdData;
@@ -97,6 +98,14 @@ public class NmrPipeReader {
 				complexes.set(k, c);
 			}
 			
+			long[] dims = data.b();
+			
+			dims[dims.length-1] /= 2;
+			
+			System.out.println("NUMFLOATS = "+numFloats);
+			
+			System.out.println("dims = "+Arrays.toString(dims));
+			
 			NdData<ComplexFloat32Member> nd = new NdData<>(data.b(), complexes);
 			
 			bundle.cflts.add(nd);
@@ -165,8 +174,12 @@ public class NmrPipeReader {
 				
 				data.set(i, type);
 			}
+
+			String dataType = reader.findDataType();
 			
-			return new Tuple3<>("real32", new long[] {numFloats}, data);
+			long[] dims = reader.findDims();
+			
+			return new Tuple3<>(dataType, dims, data);
 			
 		} catch (IOException e) {
 			
@@ -249,6 +262,71 @@ public class NmrPipeReader {
 			return bits;
 		}
 
+		private String findDataType() {
+		
+			String type = "real32";
+			
+			int dimCount = (int) getHeaderFloat(FDDIMCOUNT);
+			
+			if (dimCount < 1 || dimCount > 4)
+				throw new IllegalArgumentException("crazy dim count "+dimCount);
+			
+			// TODO: use FTDIMORDERn constants to correctly reason about complex dimension?
+			
+			if (getHeaderFloat(FDQUADFLAG) == 1.0)
+				type = "complex32";
+				
+			if (dimCount == 1)
+				if (getHeaderFloat(FDF1QUADFLAG) == 1.0)
+					type = "complex32";
+			
+			if (dimCount == 2)
+				if (getHeaderFloat(FDF2QUADFLAG) == 1.0)
+					type = "complex32";
+			
+			if (dimCount == 3)
+				if (getHeaderFloat(FDF3QUADFLAG) == 1.0)
+					type = "complex32";
+			
+			if (dimCount == 4)
+				if (getHeaderFloat(FDF4QUADFLAG) == 1.0)
+					type = "complex32";
+			
+			return type;
+		}
+		
+		private long[] findDims() {
+			
+			// TODO: use FTDIMORDERn constants to correctly reason about shape?
+			
+			int dimCount = (int) getHeaderFloat(FDDIMCOUNT);
+			
+			if (dimCount < 1 || dimCount > 4)
+ 				throw new IllegalArgumentException("crazy dim count "+dimCount);
+			
+			long[] dims = new long[dimCount];
+			
+			if (dimCount >= 1)
+				dims[0] = (long) getHeaderFloat(FDF1TDSIZE);
+
+			if (dimCount >= 2)
+				dims[1] = (long) getHeaderFloat(FDF2TDSIZE);
+
+			if (dimCount >= 3)
+				dims[3] = (long) getHeaderFloat(FDF3TDSIZE);
+
+			if (dimCount == 4)
+				dims[3] = (long) getHeaderFloat(FDF4TDSIZE);
+
+			for (int i = 0; i < dims.length; i++) {
+			
+				if (dims[i] < 1 || dims[i] > 10000)
+					throw new IllegalArgumentException("dims look shady: "+Arrays.toString(dims));
+			}
+			
+			return dims;
+		}
+		
 		// Find nrmpipe .c/.h code to verify all the formats I think exist
 		
 	    final int FDMAGIC = 0;
