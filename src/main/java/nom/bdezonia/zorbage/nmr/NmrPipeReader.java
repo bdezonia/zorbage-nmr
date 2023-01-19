@@ -32,9 +32,10 @@ import java.util.Arrays;
 import nom.bdezonia.zorbage.algebra.G;
 import nom.bdezonia.zorbage.data.NdData;
 import nom.bdezonia.zorbage.datasource.IndexedDataSource;
+import nom.bdezonia.zorbage.metadata.MetaDataStore;
 import nom.bdezonia.zorbage.misc.DataBundle;
 import nom.bdezonia.zorbage.storage.Storage;
-import nom.bdezonia.zorbage.tuple.Tuple3;
+import nom.bdezonia.zorbage.tuple.Tuple4;
 import nom.bdezonia.zorbage.type.complex.float32.ComplexFloat32Member;
 import nom.bdezonia.zorbage.type.real.float32.Float32Member;
 
@@ -65,12 +66,14 @@ public class NmrPipeReader {
 		
 		DataBundle bundle = new DataBundle();
 
-		Tuple3<String, long[], IndexedDataSource<Float32Member>> data =
+		Tuple4<String, long[], IndexedDataSource<Float32Member>, MetaDataStore> data =
 				readFloats(filename, numFloats);
 
 		if (data.a().equals("real32")) {
 
 			NdData<Float32Member> nd = new NdData<>(data.b(), data.c());
+			
+			nd.metadata().merge(data.d());
 			
 			bundle.flts.add(nd);
 		}
@@ -108,6 +111,8 @@ public class NmrPipeReader {
 			
 			NdData<ComplexFloat32Member> nd = new NdData<>(dims, complexes);
 			
+			nd.metadata().merge(data.d());
+			
 			bundle.cflts.add(nd);
 		}
 		else
@@ -142,7 +147,7 @@ public class NmrPipeReader {
 		return numFloats;
 	}
 
-	private static Tuple3<String, long[], IndexedDataSource<Float32Member>>
+	private static Tuple4<String, long[], IndexedDataSource<Float32Member>,MetaDataStore>
 		readFloats(String filename, long numFloats)
 	{
 		IndexedDataSource<Float32Member> data =
@@ -179,7 +184,19 @@ public class NmrPipeReader {
 			
 			long[] dims = reader.findDims();
 			
-			return new Tuple3<>(dataType, dims, data);
+			MetaDataStore metadata = new MetaDataStore();
+			
+			metadata.putString("username", reader.userName());
+			metadata.putString("operator", reader.operatorName());
+			metadata.putString("source", reader.sourceName());
+			metadata.putString("title", reader.title());
+			metadata.putString("comment", reader.comment());
+			metadata.putString("dim 1 label", reader.dim1Label());
+			metadata.putString("dim 2 label", reader.dim2Label());
+			metadata.putString("dim 3 label", reader.dim3Label());
+			metadata.putString("dim 4 label", reader.dim4Label());
+			
+			return new Tuple4<>(dataType, dims, data, metadata);
 			
 		} catch (IOException e) {
 			
