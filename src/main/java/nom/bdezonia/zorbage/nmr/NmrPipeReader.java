@@ -313,7 +313,7 @@ public class NmrPipeReader {
 				dims[1] = (long) getHeaderFloat(FDF2TDSIZE);
 
 			if (dimCount >= 3)
-				dims[3] = (long) getHeaderFloat(FDF3TDSIZE);
+				dims[2] = (long) getHeaderFloat(FDF3TDSIZE);
 
 			if (dimCount == 4)
 				dims[3] = (long) getHeaderFloat(FDF4TDSIZE);
