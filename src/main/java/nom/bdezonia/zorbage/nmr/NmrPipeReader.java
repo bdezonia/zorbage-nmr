@@ -323,6 +323,72 @@ public class NmrPipeReader {
 			return dims;
 		}
 		
+		private String chars(int index, int count) {
+			
+			StringBuilder b = new StringBuilder();
+			for (int i = 0; i < count; i++) {
+				int num = vars[index+i];
+				int b0 = (num >> 24) & 0xff;
+				int b1 = (num >> 16) & 0xff;
+				int b2 = (num >>  8) & 0xff;
+				int b3 = (num >>  0) & 0xff;
+				if (b0 == 0) return b.toString();
+				b.append((char) b0);
+				if (b1 == 0) return b.toString();
+				b.append((char) b1);
+				if (b2 == 0) return b.toString();
+				b.append((char) b2);
+				if (b3 == 0) return b.toString();
+				b.append((char) b3);
+			}
+			return b.toString();
+		}
+		
+		private String sourceName() {
+			
+			return chars(FDSRCNAME, 4);
+		}
+		
+		private String userName() {
+
+			return chars(FDUSERNAME, 4);
+		}
+		
+		private String operatorName() {
+			
+			return chars(FDOPERNAME, 8);
+		}
+
+		private String title() {
+			
+			return chars(FDTITLE, 15);
+		}
+
+		private String comment() {
+			
+			return chars(FDCOMMENT, 40);
+		}
+
+		private String dim1Label() {
+
+			return chars(FDF1LABEL, 2);
+		}
+
+		private String dim2Label() {
+			
+			return chars(FDF2LABEL, 2);
+		}
+
+		private String dim3Label() {
+			
+			return chars(FDF3LABEL, 2);
+		}
+
+		private String dim4Label() {
+			
+			return chars(FDF4LABEL, 2);
+		}
+		
 		// Find nrmpipe .c/.h code to verify all the formats I think exist
 		
 	    final int FDMAGIC = 0;
