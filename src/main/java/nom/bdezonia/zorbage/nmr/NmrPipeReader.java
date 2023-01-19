@@ -79,23 +79,23 @@ public class NmrPipeReader {
 			IndexedDataSource<ComplexFloat32Member> complexes =
 					Storage.allocate(G.CFLT.construct(), numFloats/2);
 			
-			ComplexFloat32Member c = G.CFLT.construct();
+			ComplexFloat32Member complex = G.CFLT.construct();
 			
-			Float32Member r = G.FLT.construct();
+			Float32Member real = G.FLT.construct();
 			
-			Float32Member i = G.FLT.construct();
+			Float32Member imag = G.FLT.construct();
 			
 			for (long k = 0; k < complexes.size(); k++) {
 				
-				data.c().get(2*k, r);
+				data.c().get(2*k, real);
 				
-				data.c().get(2*k+1, i);
+				data.c().get(2*k+1, imag);
 				
-				c.setR(r);
+				complex.setR(real);
 				
-				c.setI(i);
+				complex.setI(imag);
 				
-				complexes.set(k, c);
+				complexes.set(k, complex);
 			}
 			
 			long[] dims = data.b();
@@ -269,27 +269,23 @@ public class NmrPipeReader {
 			int dimCount = (int) getHeaderFloat(FDDIMCOUNT);
 			
 			if (dimCount < 1 || dimCount > 4)
-				throw new IllegalArgumentException("crazy dim count "+dimCount);
+ 				throw new IllegalArgumentException("dim count looks crazy "+dimCount);
 			
 			// TODO: use FTDIMORDERn constants to correctly reason about complex dimension?
 			
 			if (getHeaderFloat(FDQUADFLAG) == 1.0)
 				type = "complex32";
 				
-			if (dimCount == 1)
-				if (getHeaderFloat(FDF1QUADFLAG) == 1.0)
+			else if (dimCount == 1 && getHeaderFloat(FDF1QUADFLAG) == 1.0)
 					type = "complex32";
 			
-			if (dimCount == 2)
-				if (getHeaderFloat(FDF2QUADFLAG) == 1.0)
+			else if (dimCount == 2 && getHeaderFloat(FDF2QUADFLAG) == 1.0)
 					type = "complex32";
 			
-			if (dimCount == 3)
-				if (getHeaderFloat(FDF3QUADFLAG) == 1.0)
+			else if (dimCount == 3 && getHeaderFloat(FDF3QUADFLAG) == 1.0)
 					type = "complex32";
 			
-			if (dimCount == 4)
-				if (getHeaderFloat(FDF4QUADFLAG) == 1.0)
+			else if (dimCount == 4 && getHeaderFloat(FDF4QUADFLAG) == 1.0)
 					type = "complex32";
 			
 			return type;
@@ -302,25 +298,27 @@ public class NmrPipeReader {
 			int dimCount = (int) getHeaderFloat(FDDIMCOUNT);
 			
 			if (dimCount < 1 || dimCount > 4)
- 				throw new IllegalArgumentException("crazy dim count "+dimCount);
+ 				throw new IllegalArgumentException("dim count looks crazy "+dimCount);
 			
 			long[] dims = new long[dimCount];
 			
+			// TODO: use FTDIMORDERn constants to correctly reason about sizes?
+
 			if (dimCount >= 1)
-				dims[0] = (long) getHeaderFloat(FDF1TDSIZE);
+				dims[0] = (long) getHeaderFloat(FDF1TDSIZE); // time domain? or freq?
 
 			if (dimCount >= 2)
-				dims[1] = (long) getHeaderFloat(FDF2TDSIZE);
+				dims[1] = (long) getHeaderFloat(FDF2TDSIZE); // time domain? or freq?
 
 			if (dimCount >= 3)
-				dims[2] = (long) getHeaderFloat(FDF3TDSIZE);
+				dims[2] = (long) getHeaderFloat(FDF3TDSIZE); // time domain? or freq?
 
 			if (dimCount == 4)
-				dims[3] = (long) getHeaderFloat(FDF4TDSIZE);
+				dims[3] = (long) getHeaderFloat(FDF4TDSIZE); // time domain? or freq?
 
 			for (int i = 0; i < dims.length; i++) {
 			
-				if (dims[i] < 1 || dims[i] > 10000)
+				if (dims[i] < 1 || dims[i] > 100000)
 					throw new IllegalArgumentException("dims look shady: "+Arrays.toString(dims));
 			}
 			
