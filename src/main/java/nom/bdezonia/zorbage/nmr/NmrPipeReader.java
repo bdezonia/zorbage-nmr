@@ -216,7 +216,7 @@ public class NmrPipeReader {
 			
 			float headerVal = Float.intBitsToFloat(vars[FDFLTORDER]);
 			
-			byteSwapNeeded =  (headerVal - 2.345f > 1e-6);
+			byteSwapNeeded =  Math.abs(headerVal - 2.345f) > 1e-6;
 		}
 		
 		int getHeaderInt(int index) {
@@ -227,7 +227,7 @@ public class NmrPipeReader {
 		}
 		
 		float getHeaderFloat(int index) {
-			
+
 			int bits = intBits(vars[index]);
 
 			return Float.intBitsToFloat(bits);
@@ -293,8 +293,6 @@ public class NmrPipeReader {
 		
 		private long[] findDims() {
 			
-			// TODO: use FTDIMORDERn constants to correctly reason about shape?
-			
 			int dimCount = (int) getHeaderFloat(FDDIMCOUNT);
 			
 			if (dimCount < 1 || dimCount > 4)
@@ -302,7 +300,7 @@ public class NmrPipeReader {
 			
 			long[] dims = new long[dimCount];
 			
-			// TODO: use FTDIMORDERn constants to correctly reason about sizes?
+			// TODO: use FTDIMORDERn constants to correctly reason about shape?
 
 			if (dimCount >= 1)
 				dims[0] = (long) getHeaderFloat(FDF1TDSIZE); // time domain? or freq?
