@@ -106,7 +106,7 @@ public class NmrPipeReader {
 			
 			System.out.println("dims = "+Arrays.toString(dims));
 			
-			NdData<ComplexFloat32Member> nd = new NdData<>(data.b(), complexes);
+			NdData<ComplexFloat32Member> nd = new NdData<>(dims, complexes);
 			
 			bundle.cflts.add(nd);
 		}
