@@ -323,11 +323,11 @@ public class NmrPipeReader {
 			return dims;
 		}
 		
-		private String chars(int index, int count) {
+		private String chars(int startIndex, int intCount) {
 			
 			StringBuilder b = new StringBuilder();
-			for (int i = 0; i < count; i++) {
-				int num = vars[index+i];
+			for (int i = 0; i < intCount; i++) {
+				int num = vars[startIndex+i];
 				int b0 = (num >> 24) & 0xff;
 				int b1 = (num >> 16) & 0xff;
 				int b2 = (num >>  8) & 0xff;
