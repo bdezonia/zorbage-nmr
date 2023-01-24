@@ -44,6 +44,7 @@ import nom.bdezonia.zorbage.type.real.float32.Float32Member;
  * @author Barry DeZonia
  *
  */
+@SuppressWarnings("unused")
 public class NmrPipeReader {
 
 	private static int HEADER_BYTE_SIZE = 2048;  // 512 floats
@@ -90,11 +91,20 @@ public class NmrPipeReader {
 			
 			for (long k = 0; k < complexes.size(); k++) {
 				
-				data.c().get(2*k, real);
-				
-				data.c().get(2*k+1, imag);
+				data.c().get(k, real);
 				
 				complex.setR(real);
+				
+				complex.setI(0);
+				
+				complexes.set(k, complex);
+			}
+
+			for (long k = 0; k < complexes.size(); k++) {
+
+				complexes.get(k, complex);
+				
+				data.c().get(complexes.size() + k, imag);
 				
 				complex.setI(imag);
 				
@@ -185,6 +195,16 @@ public class NmrPipeReader {
 			long[] dims = reader.findDims();
 			
 			MetaDataStore metadata = new MetaDataStore();
+
+			System.out.println("user name:   " + reader.userName());
+			System.out.println("oper name:   " + reader.operatorName());
+			System.out.println("source:      " + reader.sourceName());
+			System.out.println("title:       " + reader.title());
+			System.out.println("comment:     " + reader.comment());
+			System.out.println("dim 1 label: " + reader.dim1Label());
+			System.out.println("dim 2 label: " + reader.dim2Label());
+			System.out.println("dim 3 label: " + reader.dim3Label());
+			System.out.println("dim 4 label: " + reader.dim4Label());
 			
 			metadata.putString("username", reader.userName());
 			metadata.putString("operator", reader.operatorName());
