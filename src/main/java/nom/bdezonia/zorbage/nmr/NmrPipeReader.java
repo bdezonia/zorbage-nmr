@@ -236,6 +236,9 @@ public class NmrPipeReader {
 			byteSwapNeeded =  Math.abs(headerVal - 2.345f) > 1e-6;
 		}
 		
+		// maybe the header vars are never ints but always floats. the little docs I've seen
+		//   seem to imply that. if so then this routine is not needed.
+		
 		int getHeaderInt(int index) {
 			
 			int bits = intBits(vars[index]);

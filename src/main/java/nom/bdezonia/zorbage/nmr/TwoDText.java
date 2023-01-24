@@ -31,7 +31,7 @@ import java.io.IOException;
 import nom.bdezonia.zorbage.algebra.Algebra;
 import nom.bdezonia.zorbage.algebra.Allocatable;
 import nom.bdezonia.zorbage.algebra.HasComponents;
-import nom.bdezonia.zorbage.algebra.SetFromDouble;
+import nom.bdezonia.zorbage.algebra.SetFromDoubles;
 import nom.bdezonia.zorbage.data.DimensionedDataSource;
 import nom.bdezonia.zorbage.data.DimensionedStorage;
 import nom.bdezonia.zorbage.dataview.TwoDView;
@@ -58,7 +58,7 @@ public class TwoDText {
 	 * @param type The kind of data values we are wanting to create.
 	 * @return The file data as read into a DimensionedDataSource.
 	 */
-	public static <T extends Algebra<T,U>, U extends Allocatable<U> & SetFromDouble & HasComponents>
+	public static <T extends Algebra<T,U>, U extends Allocatable<U> & SetFromDoubles & HasComponents>
 		DimensionedDataSource<U> read(String filename, T alg)
 	{
 		Tuple5<Integer,Long,Long,Long,Long> metadata = metadata(filename);
@@ -123,7 +123,7 @@ public class TwoDText {
 					doubleVals[i] = 0;
 				}
 				
-				val.setFromDouble(doubleVals);
+				val.setFromDoubles(doubleVals);
 				
 				vw.set(x-minX, y-minY, val);
 			}
