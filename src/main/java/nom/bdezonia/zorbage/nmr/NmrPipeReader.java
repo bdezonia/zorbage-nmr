@@ -62,9 +62,6 @@ public class NmrPipeReader {
 	 */
 	public static DataBundle open(String filename) {
 		
-		// BDZ NOTE: for now I am assuming that *.ft3 is the right extension.
-		// That might only be true for 3D data.
-		
 		long numFloats = getFileInfo(filename);
 		
 		DataBundle bundle = new DataBundle();
