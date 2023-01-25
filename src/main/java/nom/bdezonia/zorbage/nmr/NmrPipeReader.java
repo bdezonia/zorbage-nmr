@@ -35,6 +35,7 @@ import nom.bdezonia.zorbage.data.NdData;
 import nom.bdezonia.zorbage.datasource.IndexedDataSource;
 import nom.bdezonia.zorbage.metadata.MetaDataStore;
 import nom.bdezonia.zorbage.misc.DataBundle;
+import nom.bdezonia.zorbage.misc.LongUtils;
 import nom.bdezonia.zorbage.storage.Storage;
 import nom.bdezonia.zorbage.tuple.Tuple4;
 import nom.bdezonia.zorbage.type.complex.float32.ComplexFloat32Member;
@@ -73,7 +74,11 @@ public class NmrPipeReader {
 
 		if (data.a().equals("real32")) {
 
-			System.out.println("NUM FLOATS = " + numFloats);
+			System.out.println();
+			
+			System.out.println("final type is real");
+
+			System.out.println("final number of floats = " + LongUtils.numElements(data.b()));
 			
 			System.out.println("final dims = " + Arrays.toString(data.b()));
 			
@@ -126,8 +131,12 @@ public class NmrPipeReader {
 			long[] dims = data.b();
 			
 			dims[dims.length-1] /= 2;
+
+			System.out.println();
 			
-			System.out.println("NUM COMPLEXES = " + (numFloats/2));
+			System.out.println("final type is complex");
+
+			System.out.println("final number of complexes = " + LongUtils.numElements(dims));
 			
 			System.out.println("final dims = " + Arrays.toString(dims));
 			
@@ -206,7 +215,9 @@ public class NmrPipeReader {
 				data.set(i, type);
 			}
 
-			System.out.println("total floats read = " + numFloats);
+			System.out.println();
+			
+			System.out.println("raw floats read = " + numFloats);
 			
 			long[] dims = reader.findDims();
 			
@@ -214,9 +225,13 @@ public class NmrPipeReader {
 			
 			String dataType = reader.findDataType();
 			
-			System.out.println("data type = " + dataType);
+			System.out.println("data type will be = " + dataType);
 
-			System.out.println("some metadata follows...\n");
+			System.out.println();
+			
+			System.out.println("some metadata follows...");
+			
+			System.out.println();
 			
 			System.out.println("user name:   " + reader.userName());
 			System.out.println("oper name:   " + reader.operatorName());
