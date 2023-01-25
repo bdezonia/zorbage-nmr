@@ -23,6 +23,7 @@
  */
 package nom.bdezonia.zorbage.nmr;
 
+import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -72,6 +73,10 @@ public class NmrPipeReader {
 
 		if (data.a().equals("real32")) {
 
+			System.out.println("NUM FLOATS = " + numFloats);
+			
+			System.out.println("final dims = " + Arrays.toString(data.b()));
+			
 			NdData<Float32Member> nd = new NdData<>(data.b(), data.c());
 			
 			nd.metadata().merge(data.d());
@@ -88,6 +93,11 @@ public class NmrPipeReader {
 			Float32Member real = G.FLT.construct();
 			
 			Float32Member imag = G.FLT.construct();
+
+			// TODO: this read process is correct for 1D data. The nmrpipe .h files
+			//   describe different interleavings at higher dims. Read that and fix this.
+			
+			// read the real values
 			
 			for (long k = 0; k < complexes.size(); k++) {
 				
@@ -100,6 +110,8 @@ public class NmrPipeReader {
 				complexes.set(k, complex);
 			}
 
+			// read the imaginary values
+			
 			for (long k = 0; k < complexes.size(); k++) {
 
 				complexes.get(k, complex);
@@ -115,9 +127,9 @@ public class NmrPipeReader {
 			
 			dims[dims.length-1] /= 2;
 			
-			System.out.println("NUMFLOATS = "+numFloats);
+			System.out.println("NUM COMPLEXES = " + (numFloats/2));
 			
-			System.out.println("dims = "+Arrays.toString(dims));
+			System.out.println("final dims = " + Arrays.toString(dims));
 			
 			NdData<ComplexFloat32Member> nd = new NdData<>(dims, complexes);
 			
@@ -167,13 +179,17 @@ public class NmrPipeReader {
 		
 		FileInputStream fis = null;
 
+		BufferedInputStream bis = null;
+
 		DataInputStream dis = null;
 		
 		try {
 			
 			fis = new FileInputStream(file);
 
-			dis = new DataInputStream(fis);
+			bis = new BufferedInputStream(fis);
+
+			dis = new DataInputStream(bis);
 
 			FileReader reader = new FileReader();
 
@@ -190,12 +206,18 @@ public class NmrPipeReader {
 				data.set(i, type);
 			}
 
-			String dataType = reader.findDataType();
+			System.out.println("total floats read = " + numFloats);
 			
 			long[] dims = reader.findDims();
 			
-			MetaDataStore metadata = new MetaDataStore();
+			System.out.println("raw dims = " + Arrays.toString(dims));
+			
+			String dataType = reader.findDataType();
+			
+			System.out.println("data type = " + dataType);
 
+			System.out.println("some metadata follows...\n");
+			
 			System.out.println("user name:   " + reader.userName());
 			System.out.println("oper name:   " + reader.operatorName());
 			System.out.println("source:      " + reader.sourceName());
@@ -206,6 +228,8 @@ public class NmrPipeReader {
 			System.out.println("dim 3 label: " + reader.dim3Label());
 			System.out.println("dim 4 label: " + reader.dim4Label());
 			
+			MetaDataStore metadata = new MetaDataStore();
+
 			metadata.putString("username", reader.userName());
 			metadata.putString("operator", reader.operatorName());
 			metadata.putString("source", reader.sourceName());
@@ -228,6 +252,8 @@ public class NmrPipeReader {
 				
 				if (dis != null) dis.close();
 				
+				if (bis != null) bis.close();
+
 				if (fis != null) fis.close();
 				
 			} catch (Exception e) {
@@ -304,31 +330,30 @@ public class NmrPipeReader {
 
 		private String findDataType() {
 		
-			String type = "real32";
-			
 			int dimCount = (int) getHeaderFloat(FDDIMCOUNT);
 			
 			if (dimCount < 1 || dimCount > 4)
  				throw new IllegalArgumentException("dim count looks crazy "+dimCount);
 			
-			// TODO: use FTDIMORDERn constants to correctly reason about complex dimension?
+			int lastDim = (int) getHeaderFloat(FDDIMORDER1);
 			
-			if (getHeaderFloat(FDQUADFLAG) == 1.0)
-				type = "complex32";
-				
-			else if (dimCount == 1 && getHeaderFloat(FDF1QUADFLAG) == 1.0)
-					type = "complex32";
+			final int quadIndex;
+			if (lastDim == 1)
+				quadIndex = FDF1QUADFLAG;
+			else if (lastDim == 2)
+				quadIndex = FDF2QUADFLAG;
+			else if (lastDim == 3)
+				quadIndex = FDF3QUADFLAG;
+			else if (lastDim == 4)
+				quadIndex = FDF4QUADFLAG;
+			else
+				throw new IllegalArgumentException("illegal FDDIMORDER1 value = " + lastDim);
 			
-			else if (dimCount == 2 && getHeaderFloat(FDF2QUADFLAG) == 1.0)
-					type = "complex32";
-			
-			else if (dimCount == 3 && getHeaderFloat(FDF3QUADFLAG) == 1.0)
-					type = "complex32";
-			
-			else if (dimCount == 4 && getHeaderFloat(FDF4QUADFLAG) == 1.0)
-					type = "complex32";
-			
-			return type;
+			if (getHeaderFloat(quadIndex) == 1.0)
+				return "complex32";
+
+			else
+				return "real32";
 		}
 		
 		private long[] findDims() {
@@ -338,29 +363,61 @@ public class NmrPipeReader {
 			if (dimCount < 1 || dimCount > 4)
  				throw new IllegalArgumentException("dim count looks crazy "+dimCount);
 			
-			long[] dims = new long[dimCount];
-			
-			// TODO: use FTDIMORDERn constants to correctly reason about shape?
-
-			if (dimCount >= 1)
-				dims[0] = (long) getHeaderFloat(FDF1TDSIZE); // time domain? or freq?
-
-			if (dimCount >= 2)
-				dims[1] = (long) getHeaderFloat(FDF2TDSIZE); // time domain? or freq?
-
-			if (dimCount >= 3)
-				dims[2] = (long) getHeaderFloat(FDF3TDSIZE); // time domain? or freq?
-
-			if (dimCount == 4)
-				dims[3] = (long) getHeaderFloat(FDF4TDSIZE); // time domain? or freq?
-
-			for (int i = 0; i < dims.length; i++) {
-			
-				if (dims[i] < 1 || dims[i] > 100000)
-					throw new IllegalArgumentException("dims look shady: "+Arrays.toString(dims));
+			if (dimCount == 1) {
+				
+				final int floatsPerRecord = (getHeaderFloat(FDF2QUADFLAG) == 1) ? 1 : 2;
+				
+				long xDim = ((long) getHeaderFloat(FDSIZE)) * floatsPerRecord;
+				
+				return new long[] {xDim};
 			}
-			
-			return dims;
+			else { // dimCount > 1
+
+				final int floatsPerRecord;
+				
+				final long xDim, yDim, zDim, aDim;
+				
+				if (getHeaderFloat(FDF1QUADFLAG) == 1 && getHeaderFloat(FDTRANSPOSED) == 1) {
+					
+					floatsPerRecord = 1;
+				}
+				else if (getHeaderFloat(FDF2QUADFLAG) == 1 && getHeaderFloat(FDTRANSPOSED) == 0) {
+					
+					floatsPerRecord = 1;
+				}
+				else {
+					floatsPerRecord = 2;
+				}
+				
+				xDim = ((long) getHeaderFloat(FDSIZE)) * floatsPerRecord;
+				
+				if (getHeaderFloat(FDQUADFLAG) == 0 && floatsPerRecord == 1) {
+				
+					yDim = 2 * ((long) getHeaderFloat(FDSPECNUM));
+				}
+				else {
+
+					yDim = ((long) getHeaderFloat(FDSPECNUM));
+				}
+				
+				if (getHeaderFloat(FDDIMCOUNT) == 3 && getHeaderFloat(FDPIPEFLAG) != 0) {
+					
+					zDim = (long) getHeaderFloat(FDF3SIZE);
+					
+					return new long[] {xDim, yDim, zDim};
+				}
+
+				if (getHeaderFloat(FDDIMCOUNT) == 4 && getHeaderFloat(FDPIPEFLAG) != 0) {
+					
+					zDim = (long) getHeaderFloat(FDF3SIZE);
+					
+					aDim = (long) getHeaderFloat(FDF4SIZE);
+
+					return new long[] {xDim, yDim, zDim, aDim};
+				}
+				
+				return new long[] {xDim, yDim};
+			}
 		}
 		
 		private String chars(int startIndex, int intCount) {
