@@ -362,10 +362,9 @@ public class NmrPipeReader {
 				throw new IllegalArgumentException("illegal FDDIMORDER1 value = " + lastDim);
 			
 			if (getHeaderFloat(quadIndex) == 1.0)
-				return "complex32";
-
-			else
 				return "real32";
+			else
+				return "complex32";
 		}
 		
 		private long[] findDims() {
