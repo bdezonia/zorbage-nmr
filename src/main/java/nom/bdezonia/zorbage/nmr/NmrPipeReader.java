@@ -284,8 +284,22 @@ public class NmrPipeReader {
 		void readHeader(DataInputStream dis) throws IOException {
 
 			for (int i = 0; i < vars.length; i++) {
+				
 				vars[i] = dis.readInt();
 			}
+
+			if (vars[FDMAGIC] != 0) {
+				
+				throw new IllegalArgumentException("This does not appear to be a nmrPipe file");
+			}
+			
+			/* 1-26-23: personal communication with Frank D: no need to check this.
+			
+				if (vars[FDFLTFORMAT] != 0xeeeeeeee) {
+			
+					throw new IllegalArgumentException("This reader does not support any floating point format other then IEEE at the moment");
+				}
+			*/
 			
 			// endian check from a known header variable
 			
