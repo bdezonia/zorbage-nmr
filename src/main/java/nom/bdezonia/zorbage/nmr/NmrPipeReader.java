@@ -49,7 +49,8 @@ import nom.bdezonia.zorbage.type.real.float32.Float32Member;
 @SuppressWarnings("unused")
 public class NmrPipeReader {
 
-	private static int HEADER_BYTE_SIZE = 2048;  // 512 floats
+	private static int HEADER_ENTRIES = 512;   // 512 floats
+	private static int HEADER_BYTE_SIZE = HEADER_ENTRIES * 4;
 	
 	// do not instantiate
 	
@@ -277,7 +278,7 @@ public class NmrPipeReader {
 
 	private static class FileReader {
 
-		private int[] vars = new int[512];
+		private int[] vars = new int[HEADER_ENTRIES];
 		
 		private boolean byteSwapNeeded = false;
 
@@ -380,6 +381,13 @@ public class NmrPipeReader {
 			else
 				return "complex32";
 		}
+
+		// TODO: comparing to nmr pipe showhdr command I am assigning x, y, and z
+		//   dims correctly. But I am not yet positive in which order they should
+		//   be read from the file. Read Frank's code and nmrglue's code to figure
+		//   out what is best. I am always reading in x-y-z priority. Maybe Frank's
+		//   code uses DIMORDER flags instead. If so I could set set/get:
+		//   set/get(dimorder(1,x,y,z), dimorder(2,x,y,z), dimorder(3,x,y,z), value).
 		
 		private long[] findDims() {
 			
