@@ -72,82 +72,96 @@ public class NmrPipeReader {
 
 		if (data.a().equals("real32")) {
 
-			System.out.println();
-			
-			System.out.println("final type is real");
+			NdData<Float32Member> nd = realFloatDataSource(data.b(), data.c(), data.d());
 
-			System.out.println("final number of floats = " + LongUtils.numElements(data.b()));
-			
-			System.out.println("final dims = " + Arrays.toString(data.b()));
-			
-			NdData<Float32Member> nd = new NdData<>(data.b(), data.c());
-			
-			nd.metadata().merge(data.d());
-			
 			bundle.flts.add(nd);
 		}
 		else if (data.a().equals("complex32")) {
 			
-			IndexedDataSource<ComplexFloat32Member> complexes =
-					Storage.allocate(G.CFLT.construct(), numFloats/2);
-			
-			ComplexFloat32Member complex = G.CFLT.construct();
-			
-			Float32Member real = G.FLT.construct();
-			
-			Float32Member imag = G.FLT.construct();
+			NdData<ComplexFloat32Member> nd = complexFloatDataSource(data.b(), data.c(), data.d());
 
-			// TODO: this read process is correct for 1D data. The nmrpipe .h files
-			//   describe different interleavings at higher dims. Read that and fix this.
-			
-			// read the real values
-			
-			for (long k = 0; k < complexes.size(); k++) {
-				
-				data.c().get(k, real);
-				
-				complex.setR(real);
-				
-				complex.setI(0);
-				
-				complexes.set(k, complex);
-			}
-
-			// read the imaginary values
-			
-			for (long k = 0; k < complexes.size(); k++) {
-
-				complexes.get(k, complex);
-				
-				data.c().get(complexes.size() + k, imag);
-				
-				complex.setI(imag);
-				
-				complexes.set(k, complex);
-			}
-			
-			long[] dims = data.b();
-			
-			dims[dims.length-1] /= 2;
-
-			System.out.println();
-			
-			System.out.println("final type is complex");
-
-			System.out.println("final number of complexes = " + LongUtils.numElements(dims));
-			
-			System.out.println("final dims = " + Arrays.toString(dims));
-			
-			NdData<ComplexFloat32Member> nd = new NdData<>(dims, complexes);
-			
-			nd.metadata().merge(data.d());
-			
 			bundle.cflts.add(nd);
 		}
 		else
 			throw new IllegalArgumentException("unknown output data type: "+data.a());
 		
 		return bundle;
+	}
+	
+	private static NdData<Float32Member> realFloatDataSource(long[] rawDims, IndexedDataSource<Float32Member> numbers, MetaDataStore metadata) {
+		
+		NdData<Float32Member> nd = new NdData<>(rawDims, numbers);
+		
+		nd.metadata().merge(metadata);
+		
+		System.out.println();
+		
+		System.out.println("final type is real");
+
+		System.out.println("final number of floats = " + numbers.size());
+		
+		System.out.println("final dims = " + Arrays.toString(rawDims));
+		
+		return nd;
+	}
+	
+	private static NdData<ComplexFloat32Member> complexFloatDataSource(long[] rawDims, IndexedDataSource<Float32Member> numbers, MetaDataStore metadata) {
+
+		IndexedDataSource<ComplexFloat32Member> complexes =
+				Storage.allocate(G.CFLT.construct(), numbers.size()/2);
+		
+		ComplexFloat32Member complex = G.CFLT.construct();
+		
+		Float32Member real = G.FLT.construct();
+		
+		Float32Member imag = G.FLT.construct();
+
+		// TODO: this read process is correct for 1D data. The nmrpipe .h files
+		//   describe different interleavings at higher dims. Read that and fix this.
+		
+		// read the real values
+		
+		for (long k = 0; k < complexes.size(); k++) {
+			
+			numbers.get(k, real);
+			
+			complex.setR(real);
+			
+			complex.setI(0);
+			
+			complexes.set(k, complex);
+		}
+
+		// read the imaginary values
+		
+		for (long k = 0; k < complexes.size(); k++) {
+
+			complexes.get(k, complex);
+			
+			numbers.get(complexes.size() + k, imag);
+			
+			complex.setI(imag);
+			
+			complexes.set(k, complex);
+		}
+		
+		long[] dims = rawDims.clone();
+		
+		dims[dims.length-1] /= 2;
+		
+		NdData<ComplexFloat32Member> nd = new NdData<>(dims, complexes);
+		
+		nd.metadata().merge(metadata);
+		
+		System.out.println();
+		
+		System.out.println("final type is complex");
+
+		System.out.println("final number of complexes = " + complexes.size());
+		
+		System.out.println("final dims = " + Arrays.toString(dims));
+		
+		return nd;
 	}
 	
 	private static long getFileInfo(String filename) {
