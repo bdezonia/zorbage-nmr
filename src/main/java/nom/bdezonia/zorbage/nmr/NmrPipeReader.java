@@ -37,8 +37,12 @@ import nom.bdezonia.zorbage.metadata.MetaDataStore;
 import nom.bdezonia.zorbage.misc.DataBundle;
 import nom.bdezonia.zorbage.misc.LongUtils;
 import nom.bdezonia.zorbage.storage.Storage;
+import nom.bdezonia.zorbage.tuple.Tuple2;
 import nom.bdezonia.zorbage.tuple.Tuple4;
+import nom.bdezonia.zorbage.tuple.Tuple5;
 import nom.bdezonia.zorbage.type.complex.float32.ComplexFloat32Member;
+import nom.bdezonia.zorbage.type.octonion.float32.OctonionFloat32Member;
+import nom.bdezonia.zorbage.type.quaternion.float32.QuaternionFloat32Member;
 import nom.bdezonia.zorbage.type.real.float32.Float32Member;
 
 /**
@@ -67,23 +71,43 @@ public class NmrPipeReader {
 		
 		DataBundle bundle = new DataBundle();
 
-		Tuple4<String, long[], IndexedDataSource<Float32Member>, MetaDataStore> data =
+		Tuple5<String, Integer, long[], IndexedDataSource<Float32Member>, MetaDataStore> data =
 				readFloats(filename, numFloats);
 
-		if (data.a().equals("real32")) {
+		if (data.a().equals("real")) {
 
-			NdData<Float32Member> nd = realFloatDataSource(data.b(), data.c(), data.d());
+			NdData<Float32Member> nd = realDataSource(data.b(), data.c(), data.d(), data.e());
 
 			bundle.flts.add(nd);
 		}
-		else if (data.a().equals("complex32")) {
+		else if (data.a().equals("complex")) {
 			
-			NdData<ComplexFloat32Member> nd = complexFloatDataSource(data.b(), data.c(), data.d());
+			NdData<ComplexFloat32Member> nd = complexDataSource(data.b(), data.c(), data.d(), data.e());
 
 			bundle.cflts.add(nd);
 		}
+		else if (data.a().equals("quaternion")) {
+			
+			NdData<QuaternionFloat32Member> nd = quaternionDataSource(data.b(), data.c(), data.d(), data.e());
+
+			bundle.qflts.add(nd);
+		}
+		else if (data.a().equals("octonion")) {
+			
+			NdData<OctonionFloat32Member> nd = octonionDataSource(data.b(), data.c(), data.d(), data.e());
+
+			bundle.oflts.add(nd);
+		}
+		else if (data.a().equals("point")) {
+			
+			// TODO: I think it is impossible to get here but not sure. As far as
+			//   I can tell this is only possible if data is 4d and all axes are
+			//   freq dims. But nmrpipe code seems to imply only y/z/a can be freq.
+			
+			throw new IllegalArgumentException("Not yet supporting "+data.b()+" dim point data");
+		}
 		else
-			throw new IllegalArgumentException("unknown output data type: "+data.a());
+			throw new IllegalArgumentException("Unknown output data type: "+data.a());
 		
 		return bundle;
 	}
@@ -109,12 +133,17 @@ public class NmrPipeReader {
 			throw new IllegalArgumentException("File is too small to contain nrmpipe data: "+filename);
 		}
 		
+		if ((fileLength % 4) != 0) {
+			
+			throw new IllegalArgumentException("file cannot be evenly divided into floats");
+		}
+		
 		long numFloats = (fileLength - HEADER_BYTE_SIZE) / 4;
 
 		return numFloats;
 	}
 
-	private static Tuple4<String, long[], IndexedDataSource<Float32Member>,MetaDataStore>
+	private static Tuple5<String, Integer, long[], IndexedDataSource<Float32Member>, MetaDataStore>
 		readFloats(String filename, long numFloats)
 	{
 		IndexedDataSource<Float32Member> data =
@@ -136,7 +165,7 @@ public class NmrPipeReader {
 
 			dis = new DataInputStream(bis);
 
-			FileReader reader = new FileReader();
+			NmrPipeFileReader reader = new NmrPipeFileReader();
 
 			reader.readHeader(dis);
 
@@ -159,9 +188,11 @@ public class NmrPipeReader {
 			
 			System.out.println("raw dims = " + Arrays.toString(dims));
 			
-			String dataType = reader.findDataType();
+			Tuple2<String,Integer> dataType = reader.findDataType();
 			
-			System.out.println("data type will be = " + dataType);
+			System.out.println("data type will be = " + dataType.a());
+
+			System.out.println("data type has components = " + dataType.b());
 
 			System.out.println();
 			
@@ -191,7 +222,7 @@ public class NmrPipeReader {
 			metadata.putString("dim 3 label", reader.dim3Label());
 			metadata.putString("dim 4 label", reader.dim4Label());
 			
-			return new Tuple4<>(dataType, dims, data, metadata);
+			return new Tuple5<>(dataType.a(), dataType.b(), dims, data, metadata);
 			
 		} catch (IOException e) {
 			
@@ -214,7 +245,10 @@ public class NmrPipeReader {
 		}
 	}
 
-	private static NdData<Float32Member> realFloatDataSource(long[] rawDims, IndexedDataSource<Float32Member> numbers, MetaDataStore metadata) {
+	private static NdData<Float32Member> realDataSource(int numComponents, long[] rawDims, IndexedDataSource<Float32Member> numbers, MetaDataStore metadata) {
+
+		if (numComponents != 1 || (numbers.size() % numComponents) != 0)
+			throw new IllegalArgumentException("suspicious input to routine");
 		
 		NdData<Float32Member> nd = new NdData<>(rawDims, numbers);
 		
@@ -231,10 +265,13 @@ public class NmrPipeReader {
 		return nd;
 	}
 	
-	private static NdData<ComplexFloat32Member> complexFloatDataSource(long[] rawDims, IndexedDataSource<Float32Member> numbers, MetaDataStore metadata) {
+	private static NdData<ComplexFloat32Member> complexDataSource(int numComponents, long[] rawDims, IndexedDataSource<Float32Member> numbers, MetaDataStore metadata) {
+
+		if (numComponents != 2 || (numbers.size() % numComponents) != 0)
+			throw new IllegalArgumentException("suspicious input to routine");
 
 		IndexedDataSource<ComplexFloat32Member> complexes =
-				Storage.allocate(G.CFLT.construct(), numbers.size()/2);
+				Storage.allocate(G.CFLT.construct(), numbers.size()/numComponents);
 		
 		ComplexFloat32Member complex = G.CFLT.construct();
 		
@@ -242,33 +279,42 @@ public class NmrPipeReader {
 		
 		Float32Member imag = G.FLT.construct();
 
-		// TODO: this read process is correct for 1D data. The nmrpipe .h files
-		//   describe different interleavings at higher dims. Read that and fix this.
+		if (rawDims.length == 1) {
 		
-		// read the real values
-		
-		for (long k = 0; k < complexes.size(); k++) {
+			// read the real values
 			
-			numbers.get(k, real);
+			for (long k = 0; k < complexes.size(); k++) {
+				
+				numbers.get(k, real);
+				
+				complex.setR(real);
+				
+				complex.setI(0);
+				
+				complexes.set(k, complex);
+			}
+	
+			// read the imaginary values
 			
-			complex.setR(real);
-			
-			complex.setI(0);
-			
-			complexes.set(k, complex);
+			for (long k = 0; k < complexes.size(); k++) {
+	
+				complexes.get(k, complex);
+				
+				numbers.get(complexes.size() + k, imag);
+				
+				complex.setI(imag);
+				
+				complexes.set(k, complex);
+			}
 		}
-
-		// read the imaginary values
-		
-		for (long k = 0; k < complexes.size(); k++) {
-
-			complexes.get(k, complex);
+		else if (rawDims.length == 2) {
 			
-			numbers.get(complexes.size() + k, imag);
+		}
+		else if (rawDims.length == 3) {
 			
-			complex.setI(imag);
+		}
+		else if (rawDims.length == 4) {
 			
-			complexes.set(k, complex);
 		}
 		
 		long[] dims = rawDims.clone();
@@ -290,7 +336,63 @@ public class NmrPipeReader {
 		return nd;
 	}
 
-	private static class FileReader {
+	private static NdData<QuaternionFloat32Member> quaternionDataSource(int numComponents, long[] rawDims, IndexedDataSource<Float32Member> numbers, MetaDataStore metadata) {
+
+		if (numComponents != 4 || (numbers.size() % numComponents) != 0)
+			throw new IllegalArgumentException("suspicious input to routine");
+
+		IndexedDataSource<QuaternionFloat32Member> data = Storage.allocate(G.QFLT.construct(), numbers.size() / 4);
+		
+		long[] dims = rawDims.clone();
+		
+		dims[dims.length-1] /= 4;
+		
+		// TODO: fill the pixel data in the correct orders for the right num of dims
+		
+		NdData<QuaternionFloat32Member> nd = new NdData<>(dims, data);
+		
+		nd.metadata().merge(metadata);
+		
+		System.out.println();
+		
+		System.out.println("final type is quaternion");
+
+		System.out.println("final number of quats = " + data.size());
+		
+		System.out.println("final dims = " + Arrays.toString(dims));
+		
+		return nd;
+	}
+
+	private static NdData<OctonionFloat32Member> octonionDataSource(int numComponents, long[] rawDims, IndexedDataSource<Float32Member> numbers, MetaDataStore metadata) {
+
+		if (numComponents != 8 || (numbers.size() % numComponents) != 0)
+			throw new IllegalArgumentException("suspicious input to routine");
+
+		IndexedDataSource<OctonionFloat32Member> data = Storage.allocate(G.OFLT.construct(), numbers.size()/8);
+		
+		// TODO: fill the pixel data in the correct orders for the right num of dims
+		
+		long[] dims = rawDims.clone();
+		
+		dims[dims.length-1] /= 8;
+		
+		NdData<OctonionFloat32Member> nd = new NdData<>(dims, data);
+		
+		nd.metadata().merge(metadata);
+		
+		System.out.println();
+		
+		System.out.println("final type is octonion");
+
+		System.out.println("final number of octs = " + data.size());
+		
+		System.out.println("final dims = " + Arrays.toString(dims));
+		
+		return nd;
+	}
+
+	private static class NmrPipeFileReader {
 
 		private int[] vars = new int[HEADER_ENTRIES];
 		
@@ -310,13 +412,13 @@ public class NmrPipeReader {
 			
 			/* 1-26-23: personal communication with Frank D: no need to check this.
 			
-				if (vars[FDFLTFORMAT] != 0xeeeeeeee) {
+				if (vars[FDFLTFORMAT] != (float) 0xeeeeeeee) {
 			
 					throw new IllegalArgumentException("This reader does not support any floating point format other then IEEE at the moment");
 				}
 			*/
 			
-			// endian check from a known header variable
+			// endian check from appropriate header variable
 			
 			float headerVal = Float.intBitsToFloat(vars[FDFLTORDER]);
 			
@@ -369,7 +471,9 @@ public class NmrPipeReader {
 			return bits;
 		}
 
-		private String findDataType() {
+		// based on ideas I saw in nmrglue: maybe not what I want
+		
+		private String oldFindDataType() {
 		
 			int dimCount = (int) getHeaderFloat(FDDIMCOUNT);
 			
@@ -380,9 +484,9 @@ public class NmrPipeReader {
 			
 			final int quadIndex;
 			if (lastDim == 1)
-				quadIndex = FDF1QUADFLAG;
-			else if (lastDim == 2)
 				quadIndex = FDF2QUADFLAG;
+			else if (lastDim == 2)
+				quadIndex = FDF1QUADFLAG;
 			else if (lastDim == 3)
 				quadIndex = FDF3QUADFLAG;
 			else if (lastDim == 4)
@@ -391,9 +495,51 @@ public class NmrPipeReader {
 				throw new IllegalArgumentException("illegal FDDIMORDER1 value = " + lastDim);
 			
 			if (getHeaderFloat(quadIndex) == 1.0)
-				return "real32";
+				return "real";
 			else
-				return "complex32";
+				return "complex";
+		}
+
+		private Tuple2<String,Integer> findDataType() {
+		
+			int dimCount = (int) getHeaderFloat(FDDIMCOUNT);
+			
+			if (dimCount < 1 || dimCount > 4)
+ 				throw new IllegalArgumentException("dim count looks crazy "+dimCount);
+			
+			int numComponents = 1;
+
+			if (dimCount >= 1)
+				numComponents *= (getHeaderFloat(FDF2QUADFLAG) == 1 ? 1 : 2);
+
+			if (dimCount >= 2)
+				numComponents *= (getHeaderFloat(FDF1QUADFLAG) == 1 ? 1 : 2);
+
+			if (dimCount >= 3)
+				numComponents *= (getHeaderFloat(FDF3QUADFLAG) == 1 ? 1 : 2);
+
+			if (dimCount >= 4)
+				numComponents *= (getHeaderFloat(FDF4QUADFLAG) == 1 ? 1 : 2);
+			
+			// TODO: do I want all of these cases below to return ("point",numComponents)
+			
+			if (numComponents == 1) {
+				return new Tuple2<>("real", numComponents);
+			}
+			
+			if (numComponents == 2) {
+				return new Tuple2<>("complex", numComponents);
+			}
+			
+			if (numComponents == 4) {
+				return new Tuple2<>("quaternion", numComponents);
+			}
+			
+			if (numComponents == 8) {
+				return new Tuple2<>("octonion", numComponents);
+			}
+
+			return new Tuple2<>("point", numComponents);
 		}
 
 		// TODO: comparing to nmr pipe showhdr command I am assigning x, y, and z
@@ -405,6 +551,11 @@ public class NmrPipeReader {
 		//   Or I could do a DimensionalPermutation on the just read data to get it
 		//   ordered in x-y-z-a order.
 		
+		// based on ideas I saw in nmrglue: maybe not what I want.
+		//   perhaps we should call findDataType() first and reason
+		//   more nicely about what actual dims are rather than these
+		//   hacky calcs.
+		
 		private long[] findDims() {
 			
 			int dimCount = (int) getHeaderFloat(FDDIMCOUNT);
@@ -414,6 +565,8 @@ public class NmrPipeReader {
 			
 			if (dimCount == 1) {
 				
+				// one and two interchanged like nmrpipe code
+
 				final int floatsPerRecord = (getHeaderFloat(FDF2QUADFLAG) == 1) ? 1 : 2;
 				
 				long xDim = ((long) getHeaderFloat(FDSIZE)) * floatsPerRecord;
@@ -514,15 +667,19 @@ public class NmrPipeReader {
 			
 			return intsToString(FDCOMMENT, 40);
 		}
-
+		
 		private String dim1Label() {
 
-			return intsToString(FDF1LABEL, 2);
+			// one and two interchanged like nmrpipe code
+
+			return intsToString(FDF2LABEL, 2);
 		}
 
 		private String dim2Label() {
 			
-			return intsToString(FDF2LABEL, 2);
+			// one and two interchanged like nmrpipe code
+			
+			return intsToString(FDF1LABEL, 2);
 		}
 
 		private String dim3Label() {
@@ -533,6 +690,51 @@ public class NmrPipeReader {
 		private String dim4Label() {
 			
 			return intsToString(FDF4LABEL, 2);
+		}
+		
+		private String dimHalf0Label(int dim) {
+			
+			// one and two interchanged like nmrpipe code
+			
+			if (dim == 1)
+				return intsToString(FDF2LABEL+0, 1);
+			if (dim == 2)
+				return intsToString(FDF1LABEL+0, 1);
+			if (dim == 3)
+				return intsToString(FDF3LABEL+0, 1);
+			if (dim == 4)
+				return intsToString(FDF4LABEL+0, 1);
+			return "?";
+		}
+		
+		private String dimHalf1Label(int dim) {
+			
+			// one and two interchanged like nmrpipe code
+			
+			if (dim == 1)
+				return intsToString(FDF2LABEL+1, 1);
+			if (dim == 2)
+				return intsToString(FDF1LABEL+1, 1);
+			if (dim == 3)
+				return intsToString(FDF3LABEL+1, 1);
+			if (dim == 4)
+				return intsToString(FDF4LABEL+1, 1);
+			return "?";
+		}
+
+		private String dimLabel(int dim) {
+
+			// NOTE: one and two NOT interchanged on purpose
+			
+			if (dim == 1)
+				return dim1Label();
+			if (dim == 2)
+				return dim2Label();
+			if (dim == 3)
+				return dim3Label();
+			if (dim == 4)
+				return dim4Label();
+			return "?";
 		}
 		
 		// Find nrmpipe .c/.h code to verify all the formats I think exist
