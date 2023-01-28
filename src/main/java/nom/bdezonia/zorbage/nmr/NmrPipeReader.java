@@ -63,7 +63,7 @@ public class NmrPipeReader {
 	 */
 	public static DataBundle open(String filename) {
 		
-		long numFloats = getFileInfo(filename);
+		long numFloats = preprocessFile(filename);
 		
 		DataBundle bundle = new DataBundle();
 
@@ -88,83 +88,7 @@ public class NmrPipeReader {
 		return bundle;
 	}
 	
-	private static NdData<Float32Member> realFloatDataSource(long[] rawDims, IndexedDataSource<Float32Member> numbers, MetaDataStore metadata) {
-		
-		NdData<Float32Member> nd = new NdData<>(rawDims, numbers);
-		
-		nd.metadata().merge(metadata);
-		
-		System.out.println();
-		
-		System.out.println("final type is real");
-
-		System.out.println("final number of floats = " + numbers.size());
-		
-		System.out.println("final dims = " + Arrays.toString(rawDims));
-		
-		return nd;
-	}
-	
-	private static NdData<ComplexFloat32Member> complexFloatDataSource(long[] rawDims, IndexedDataSource<Float32Member> numbers, MetaDataStore metadata) {
-
-		IndexedDataSource<ComplexFloat32Member> complexes =
-				Storage.allocate(G.CFLT.construct(), numbers.size()/2);
-		
-		ComplexFloat32Member complex = G.CFLT.construct();
-		
-		Float32Member real = G.FLT.construct();
-		
-		Float32Member imag = G.FLT.construct();
-
-		// TODO: this read process is correct for 1D data. The nmrpipe .h files
-		//   describe different interleavings at higher dims. Read that and fix this.
-		
-		// read the real values
-		
-		for (long k = 0; k < complexes.size(); k++) {
-			
-			numbers.get(k, real);
-			
-			complex.setR(real);
-			
-			complex.setI(0);
-			
-			complexes.set(k, complex);
-		}
-
-		// read the imaginary values
-		
-		for (long k = 0; k < complexes.size(); k++) {
-
-			complexes.get(k, complex);
-			
-			numbers.get(complexes.size() + k, imag);
-			
-			complex.setI(imag);
-			
-			complexes.set(k, complex);
-		}
-		
-		long[] dims = rawDims.clone();
-		
-		dims[dims.length-1] /= 2;
-		
-		NdData<ComplexFloat32Member> nd = new NdData<>(dims, complexes);
-		
-		nd.metadata().merge(metadata);
-		
-		System.out.println();
-		
-		System.out.println("final type is complex");
-
-		System.out.println("final number of complexes = " + complexes.size());
-		
-		System.out.println("final dims = " + Arrays.toString(dims));
-		
-		return nd;
-	}
-	
-	private static long getFileInfo(String filename) {
+	private static long preprocessFile(String filename) {
 		
 		File file = new File(filename);
 		
@@ -290,6 +214,82 @@ public class NmrPipeReader {
 		}
 	}
 
+	private static NdData<Float32Member> realFloatDataSource(long[] rawDims, IndexedDataSource<Float32Member> numbers, MetaDataStore metadata) {
+		
+		NdData<Float32Member> nd = new NdData<>(rawDims, numbers);
+		
+		nd.metadata().merge(metadata);
+		
+		System.out.println();
+		
+		System.out.println("final type is real");
+
+		System.out.println("final number of floats = " + numbers.size());
+		
+		System.out.println("final dims = " + Arrays.toString(rawDims));
+		
+		return nd;
+	}
+	
+	private static NdData<ComplexFloat32Member> complexFloatDataSource(long[] rawDims, IndexedDataSource<Float32Member> numbers, MetaDataStore metadata) {
+
+		IndexedDataSource<ComplexFloat32Member> complexes =
+				Storage.allocate(G.CFLT.construct(), numbers.size()/2);
+		
+		ComplexFloat32Member complex = G.CFLT.construct();
+		
+		Float32Member real = G.FLT.construct();
+		
+		Float32Member imag = G.FLT.construct();
+
+		// TODO: this read process is correct for 1D data. The nmrpipe .h files
+		//   describe different interleavings at higher dims. Read that and fix this.
+		
+		// read the real values
+		
+		for (long k = 0; k < complexes.size(); k++) {
+			
+			numbers.get(k, real);
+			
+			complex.setR(real);
+			
+			complex.setI(0);
+			
+			complexes.set(k, complex);
+		}
+
+		// read the imaginary values
+		
+		for (long k = 0; k < complexes.size(); k++) {
+
+			complexes.get(k, complex);
+			
+			numbers.get(complexes.size() + k, imag);
+			
+			complex.setI(imag);
+			
+			complexes.set(k, complex);
+		}
+		
+		long[] dims = rawDims.clone();
+		
+		dims[dims.length-1] /= 2;
+		
+		NdData<ComplexFloat32Member> nd = new NdData<>(dims, complexes);
+		
+		nd.metadata().merge(metadata);
+		
+		System.out.println();
+		
+		System.out.println("final type is complex");
+
+		System.out.println("final number of complexes = " + complexes.size());
+		
+		System.out.println("final dims = " + Arrays.toString(dims));
+		
+		return nd;
+	}
+
 	private static class FileReader {
 
 		private int[] vars = new int[HEADER_ENTRIES];
@@ -397,11 +397,13 @@ public class NmrPipeReader {
 		}
 
 		// TODO: comparing to nmr pipe showhdr command I am assigning x, y, and z
-		//   dims correctly. But I am not yet positive in which order they should
-		//   be read from the file. Read Frank's code and nmrglue's code to figure
-		//   out what is best. I am always reading in x-y-z priority. Maybe Frank's
-		//   code uses DIMORDER flags instead. If so I could set set/get:
+		//   dims correctly. But I am not yet positive in which order the values
+		//   should be read from the file. Read Frank's code and nmrglue's code to
+		//   figure out what is best. I am always reading in x-y-z priority. Maybe
+		//   Frank's code uses DIMORDER flags instead. If so I could use set/get:
 		//   set/get(dimorder(1,x,y,z), dimorder(2,x,y,z), dimorder(3,x,y,z), value).
+		//   Or I could do a DimensionalPermutation on the just read data to get it
+		//   ordered in x-y-z-a order.
 		
 		private long[] findDims() {
 			
@@ -467,7 +469,7 @@ public class NmrPipeReader {
 			}
 		}
 		
-		private String chars(int startIndex, int intCount) {
+		private String intsToString(int startIndex, int intCount) {
 			
 			StringBuilder b = new StringBuilder();
 			for (int i = 0; i < intCount; i++) {
@@ -490,47 +492,47 @@ public class NmrPipeReader {
 		
 		private String sourceName() {
 			
-			return chars(FDSRCNAME, 4);
+			return intsToString(FDSRCNAME, 4);
 		}
 		
 		private String userName() {
 
-			return chars(FDUSERNAME, 4);
+			return intsToString(FDUSERNAME, 4);
 		}
 		
 		private String operatorName() {
 			
-			return chars(FDOPERNAME, 8);
+			return intsToString(FDOPERNAME, 8);
 		}
 
 		private String title() {
 			
-			return chars(FDTITLE, 15);
+			return intsToString(FDTITLE, 15);
 		}
 
 		private String comment() {
 			
-			return chars(FDCOMMENT, 40);
+			return intsToString(FDCOMMENT, 40);
 		}
 
 		private String dim1Label() {
 
-			return chars(FDF1LABEL, 2);
+			return intsToString(FDF1LABEL, 2);
 		}
 
 		private String dim2Label() {
 			
-			return chars(FDF2LABEL, 2);
+			return intsToString(FDF2LABEL, 2);
 		}
 
 		private String dim3Label() {
 			
-			return chars(FDF3LABEL, 2);
+			return intsToString(FDF3LABEL, 2);
 		}
 
 		private String dim4Label() {
 			
-			return chars(FDF4LABEL, 2);
+			return intsToString(FDF4LABEL, 2);
 		}
 		
 		// Find nrmpipe .c/.h code to verify all the formats I think exist
