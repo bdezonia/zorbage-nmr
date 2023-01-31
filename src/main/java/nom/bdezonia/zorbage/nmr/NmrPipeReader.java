@@ -414,13 +414,17 @@ public class NmrPipeReader {
 			
 				if (vars[FDFLTFORMAT] != (float) 0xeeeeeeee) {
 			
-					throw new IllegalArgumentException("This reader does not support any floating point format other then IEEE at the moment");
+					throw new IllegalArgumentException(
+							"This reader only supports IEEE floating point format values");
 				}
 			*/
 			
 			// endian check from appropriate header variable
 			
 			float headerVal = Float.intBitsToFloat(vars[FDFLTORDER]);
+			
+			if (Float.isNaN(headerVal))
+				throw new IllegalArgumentException("Weird value present for FDFLTORDER");
 			
 			byteSwapNeeded =  Math.abs(headerVal - 2.345f) > 1e-6;
 		}
