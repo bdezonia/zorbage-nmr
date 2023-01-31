@@ -243,6 +243,19 @@ public class NmrPipeReader {
 		if (numComponents != 1 || (numbers.size() % numComponents) != 0)
 			throw new IllegalArgumentException("suspicious input to real data source allocation routine");
 		
+		// from NMRPipe's fdatap.h header file:
+		
+		// 1D Real Format File, N Real Points:
+		// 
+		//   (2048-byte FDATA file header)
+		//   (N four-byte float values for Real Part)
+		//
+
+		// TODO my code extends naturally to 2d, 3d, and 4d. Do I need
+		// special case code cuz 3 d and 4 d data might live in files?
+		// Or maybe zorbage axis order is different from NMRPipe order
+		// and the values could be scrambled.
+		
 		NdData<Float32Member> nd = new NdData<>(rawDims, numbers);
 		
 		nd.metadata().merge(metadata);
@@ -274,45 +287,56 @@ public class NmrPipeReader {
 		
 		// due to earlier code calls dims guaranteed to be between 1 and 4
 		
-		if (rawDims.length == 1) {
+		if (rawDims.length == 1 || rawDims.length == 2) {
 
-			// read the R values
+			// from NMRPipe's fdatap.h header file:
 			
-			complex.setI(0);
+			// 1D Complex Format File, N Complex Points:
+			//
+			//   (2048-byte FDATA file header)
+			//   (N four-byte Float Values for Real Part)
+			//   (N four-byte Float Values for Imag Part)
+			//
 			
-			for (long k = 0; k < complexes.size(); k++) {
-				
-				numbers.get(k, value);
-				
-				complex.setR(value);
-				
-				complexes.set(k, complex);
-			}
-	
-			// read the I values
+			long n = 0;
 			
-			for (long k = 0; k < complexes.size(); k++) {
-	
-				complexes.get(k, complex);
+			long numY = rawDims.length == 1 ? 1 : rawDims[1];  // I'm extending to 2d
+			
+			for (long y = 0; y < numY; y++) {
+
+				complex.setI(0);
 				
-				numbers.get(complexes.size() + k, value);
+				// read the R values
+
+				for (long k = 0; k < complexes.size(); k++) {
+					
+					numbers.get(n++, value);
+					
+					complex.setR(value);
+					
+					complexes.set(k, complex);
+				}
+		
+				// read the I values
 				
-				complex.setI(value);
-				
-				complexes.set(k, complex);
+				for (long k = 0; k < complexes.size(); k++) {
+		
+					complexes.get(k, complex);
+					
+					numbers.get(n++, value);
+					
+					complex.setI(value);
+					
+					complexes.set(k, complex);
+				}
 			}
 			
 			// adjust the dims
 			
-			dims[0] /= 2;
-		}
-		else if (rawDims.length == 2) {
-			
-			// TODO read the data in the correct interleaved way
-			
-			// adjust the dims
-			
-			dims[1] /= 2;
+			if (rawDims.length == 1)
+				dims[0] /= 2;
+			else
+				dims[1] /= 2;
 		}
 		else {
 			
@@ -361,75 +385,97 @@ public class NmrPipeReader {
 
 		// due to earlier code calls dims guaranteed to be between 1 and 4
 		
-		if (rawDims.length == 1) {
+		if (rawDims.length == 1 || rawDims.length == 2) {
+			
+			// from NMRPipe's fdatap.h header file:
+			
+			// 2D Hypercomplex Plane File;
+			// X-Axis N Complex Points and Y-Axis M Complex points:
+			// 
+			//   (2048-byte FDATA file header)
+			//   (N X-Axis=Real Values for Y-Axis Increment 1 Real)
+			//   (N X-Axis=Imag Values for Y-Axis Increment 1 Real)
+			//   (N X-Axis=Real Values for Y-Axis Increment 1 Imag)
+			//   (N X-Axis=Imag Values for Y-Axis Increment 1 Imag)
+			//   (N X-Axis=Real Values for Y-Axis Increment 2 Real)
+			//   (N X-Axis=Imag Values for Y-Axis Increment 2 Real)
+			//   (N X-Axis=Real Values for Y-Axis Increment 2 Imag)
+			//   (N X-Axis=Imag Values for Y-Axis Increment 2 Imag)
+			//   ...
+			//   (N X-Axis=Real Values for Y-Axis Increment M Real)
+			//   (N X-Axis=Imag Values for Y-Axis Increment M Real)
+			//   (N X-Axis=Real Values for Y-Axis Increment M Imag)
+			//   (N X-Axis=Imag Values for Y-Axis Increment M Imag)
+		
+			long n = 0;
+			
+			long numY = rawDims.length == 1 ? 1 : rawDims[1];  // I'm extending 2d to 1d
+			
+			for (long y = 0; y < numY; y++) {
 
-			// read the R values
-			
-			quat.setI(0);
-			
-			quat.setJ(0);
-			
-			quat.setK(0);
-
-			for (long k = 0; k < quats.size(); k++) {
+				quat.setI(0);
 				
-				numbers.get(k, value);
+				quat.setJ(0);
 				
-				quat.setR(value);
+				quat.setK(0);
 				
-				quats.set(k, quat);
-			}
+				// read R values
+				
+				for (long i = 0; i < rawDims[0]; i++) {
+					
+					numbers.get(n++,  value);
+					
+					quat.setR(value);
+					
+					quats.set(i, quat);
+				}
+				
+				// read I values
+				
+				for (long i = 0; i < rawDims[0]; i++) {
 	
-			// read the I values
-			
-			for (long k = 0; k < quats.size(); k++) {
-	
-				quats.get(k, quat);
+					quats.get(i, quat);
+					
+					numbers.get(n++,  value);
+					
+					quat.setI(value);
+					
+					quats.set(i, quat);
+				}
 				
-				numbers.get(quats.size() + k, value);
+				// read J values
 				
-				quat.setI(value);
+				for (long i = 0; i < rawDims[0]; i++) {
+					
+					quats.get(i, quat);
+					
+					numbers.get(n++,  value);
+					
+					quat.setJ(value);
+					
+					quats.set(i, quat);
+				}
 				
-				quats.set(k, quat);
-			}
-			
-			// read the J values
-			
-			for (long k = 0; k < quats.size(); k++) {
-	
-				quats.get(k, quat);
+				// read K values
 				
-				numbers.get(quats.size() + k, value);
-				
-				quat.setJ(value);
-				
-				quats.set(k, quat);
-			}
-			
-			// read the K values
-			
-			for (long k = 0; k < quats.size(); k++) {
-	
-				quats.get(k, quat);
-				
-				numbers.get(quats.size() + k, value);
-				
-				quat.setK(value);
-				
-				quats.set(k, quat);
+				for (long i = 0; i < rawDims[0]; i++) {
+					
+					quats.get(i, quat);
+					
+					numbers.get(n++,  value);
+					
+					quat.setK(value);
+					
+					quats.set(i, quat);
+				}
 			}
 			
 			// adjust the dims
 			
-			dims[0] /= 4;
-		}
-		else if (rawDims.length == 2) {
-			
-			// TODO read the data in the correct interleaved way
-			
-			// adjust the dims
-			
-			dims[1] /= 4;
+			if (rawDims.length == 1)
+				dims[0] /= 4;
+			else
+				dims[1] /= 4;
 		}
 		else {
 			
@@ -460,36 +506,6 @@ public class NmrPipeReader {
 		return nd;
 	}
 
-/*
-	private static NdData<OctonionFloat32Member> octonionDataSource(int numComponents, long[] rawDims, IndexedDataSource<Float32Member> numbers, MetaDataStore metadata) {
-
-		if (numComponents != 8 || (numbers.size() % numComponents) != 0)
-			throw new IllegalArgumentException("suspicious input to routine");
-
-		IndexedDataSource<OctonionFloat32Member> data = Storage.allocate(G.OFLT.construct(), numbers.size()/8);
-		
-		// TODO: fill the pixel data in the correct orders for the right num of dims
-		
-		long[] dims = rawDims.clone();
-		
-		dims[dims.length-1] /= 8;
-		
-		NdData<OctonionFloat32Member> nd = new NdData<>(dims, data);
-		
-		nd.metadata().merge(metadata);
-		
-		System.out.println();
-		
-		System.out.println("final type is octonion");
-
-		System.out.println("final number of octs = " + data.size());
-		
-		System.out.println("final dims = " + Arrays.toString(dims));
-		
-		return nd;
-	}
-*/
-	
 	private static class NmrPipeFileReader {
 
 		private int[] vars = new int[HEADER_ENTRIES];
@@ -613,12 +629,6 @@ public class NmrPipeReader {
 			if (numComponents == 4) {
 				return new Tuple2<>("quaternion", numComponents);
 			}
-
-/*
-			if (numComponents == 8) {
-				return new Tuple2<>("octonion", numComponents);
-			}
-*/
 
 			return new Tuple2<>("point", numComponents);
 		}
