@@ -41,7 +41,6 @@ import nom.bdezonia.zorbage.tuple.Tuple2;
 import nom.bdezonia.zorbage.tuple.Tuple4;
 import nom.bdezonia.zorbage.tuple.Tuple5;
 import nom.bdezonia.zorbage.type.complex.float32.ComplexFloat32Member;
-import nom.bdezonia.zorbage.type.octonion.float32.OctonionFloat32Member;
 import nom.bdezonia.zorbage.type.quaternion.float32.QuaternionFloat32Member;
 import nom.bdezonia.zorbage.type.real.float32.Float32Member;
 
@@ -91,12 +90,6 @@ public class NmrPipeReader {
 			NdData<QuaternionFloat32Member> nd = quaternionDataSource(data.b(), data.c(), data.d(), data.e());
 
 			bundle.qflts.add(nd);
-		}
-		else if (data.a().equals("octonion")) {
-			
-			NdData<OctonionFloat32Member> nd = octonionDataSource(data.b(), data.c(), data.d(), data.e());
-
-			bundle.oflts.add(nd);
 		}
 		else if (data.a().equals("point")) {
 			
@@ -248,7 +241,7 @@ public class NmrPipeReader {
 	private static NdData<Float32Member> realDataSource(int numComponents, long[] rawDims, IndexedDataSource<Float32Member> numbers, MetaDataStore metadata) {
 
 		if (numComponents != 1 || (numbers.size() % numComponents) != 0)
-			throw new IllegalArgumentException("suspicious input to routine");
+			throw new IllegalArgumentException("suspicious input to real data source allocation routine");
 		
 		NdData<Float32Member> nd = new NdData<>(rawDims, numbers);
 		
@@ -268,58 +261,72 @@ public class NmrPipeReader {
 	private static NdData<ComplexFloat32Member> complexDataSource(int numComponents, long[] rawDims, IndexedDataSource<Float32Member> numbers, MetaDataStore metadata) {
 
 		if (numComponents != 2 || (numbers.size() % numComponents) != 0)
-			throw new IllegalArgumentException("suspicious input to routine");
+			throw new IllegalArgumentException("suspicious input to complex data source allocation routine");
 
 		IndexedDataSource<ComplexFloat32Member> complexes =
 				Storage.allocate(G.CFLT.construct(), numbers.size()/numComponents);
 		
 		ComplexFloat32Member complex = G.CFLT.construct();
 		
-		Float32Member real = G.FLT.construct();
-		
-		Float32Member imag = G.FLT.construct();
+		Float32Member value = G.FLT.construct();
 
-		if (rawDims.length == 1) {
+		long[] dims = rawDims.clone();
 		
-			// read the real values
+		// due to earlier code calls dims guaranteed to be between 1 and 4
+		
+		if (rawDims.length == 1) {
+
+			// read the R values
+			
+			complex.setI(0);
 			
 			for (long k = 0; k < complexes.size(); k++) {
 				
-				numbers.get(k, real);
+				numbers.get(k, value);
 				
-				complex.setR(real);
-				
-				complex.setI(0);
+				complex.setR(value);
 				
 				complexes.set(k, complex);
 			}
 	
-			// read the imaginary values
+			// read the I values
 			
 			for (long k = 0; k < complexes.size(); k++) {
 	
 				complexes.get(k, complex);
 				
-				numbers.get(complexes.size() + k, imag);
+				numbers.get(complexes.size() + k, value);
 				
-				complex.setI(imag);
+				complex.setI(value);
 				
 				complexes.set(k, complex);
 			}
+			
+			// adjust the dims
+			
+			dims[0] /= 2;
 		}
 		else if (rawDims.length == 2) {
 			
-		}
-		else if (rawDims.length == 3) {
+			// TODO read the data in the correct interleaved way
 			
-		}
-		else if (rawDims.length == 4) {
+			// adjust the dims
 			
+			dims[1] /= 2;
 		}
-		
-		long[] dims = rawDims.clone();
-		
-		dims[dims.length-1] /= 2;
+		else {
+			
+			// TODO read the data in the correct interleaved way
+			
+			// num dims == 3 or 4: data must be read from additional files.
+			//   Although maybe nmrpipe supports a 3d or 4d all in one file facility.
+			
+			// adjust the dims
+			
+			dims[1] /= 2;  // TODO: is this index right?
+
+			throw new IllegalArgumentException("complex 3d or 4d case not yet implemented");
+		}
 		
 		NdData<ComplexFloat32Member> nd = new NdData<>(dims, complexes);
 		
@@ -339,15 +346,104 @@ public class NmrPipeReader {
 	private static NdData<QuaternionFloat32Member> quaternionDataSource(int numComponents, long[] rawDims, IndexedDataSource<Float32Member> numbers, MetaDataStore metadata) {
 
 		if (numComponents != 4 || (numbers.size() % numComponents) != 0)
-			throw new IllegalArgumentException("suspicious input to routine");
+			throw new IllegalArgumentException("suspicious input to quaternion data source allocation routine");
 
 		IndexedDataSource<QuaternionFloat32Member> data = Storage.allocate(G.QFLT.construct(), numbers.size() / 4);
+
+		IndexedDataSource<QuaternionFloat32Member> quats =
+				Storage.allocate(G.QFLT.construct(), numbers.size()/numComponents);
+		
+		QuaternionFloat32Member quat = G.QFLT.construct();
+		
+		Float32Member value = G.FLT.construct();
 		
 		long[] dims = rawDims.clone();
+
+		// due to earlier code calls dims guaranteed to be between 1 and 4
 		
-		dims[dims.length-1] /= 4;
-		
-		// TODO: fill the pixel data in the correct orders for the right num of dims
+		if (rawDims.length == 1) {
+
+			// read the R values
+			
+			quat.setI(0);
+			
+			quat.setJ(0);
+			
+			quat.setK(0);
+
+			for (long k = 0; k < quats.size(); k++) {
+				
+				numbers.get(k, value);
+				
+				quat.setR(value);
+				
+				quats.set(k, quat);
+			}
+	
+			// read the I values
+			
+			for (long k = 0; k < quats.size(); k++) {
+	
+				quats.get(k, quat);
+				
+				numbers.get(quats.size() + k, value);
+				
+				quat.setI(value);
+				
+				quats.set(k, quat);
+			}
+			
+			// read the J values
+			
+			for (long k = 0; k < quats.size(); k++) {
+	
+				quats.get(k, quat);
+				
+				numbers.get(quats.size() + k, value);
+				
+				quat.setJ(value);
+				
+				quats.set(k, quat);
+			}
+			
+			// read the K values
+			
+			for (long k = 0; k < quats.size(); k++) {
+	
+				quats.get(k, quat);
+				
+				numbers.get(quats.size() + k, value);
+				
+				quat.setK(value);
+				
+				quats.set(k, quat);
+			}
+			
+			// adjust the dims
+			
+			dims[0] /= 4;
+		}
+		else if (rawDims.length == 2) {
+			
+			// TODO read the data in the correct interleaved way
+			
+			// adjust the dims
+			
+			dims[1] /= 4;
+		}
+		else {
+			
+			// TODO read the data in the correct interleaved way
+			
+			// num dims == 3 or 4: data must be read from additional files.
+			//   Although maybe nmrpipe supports a 3d or 4d all in one file facility.
+			
+			// adjust the dims
+			
+			dims[1] /= 4;  // TODO: is this index right?
+
+			throw new IllegalArgumentException("quaternion 3d or 4d case not yet implemented");
+		}
 		
 		NdData<QuaternionFloat32Member> nd = new NdData<>(dims, data);
 		
@@ -364,6 +460,7 @@ public class NmrPipeReader {
 		return nd;
 	}
 
+/*
 	private static NdData<OctonionFloat32Member> octonionDataSource(int numComponents, long[] rawDims, IndexedDataSource<Float32Member> numbers, MetaDataStore metadata) {
 
 		if (numComponents != 8 || (numbers.size() % numComponents) != 0)
@@ -391,7 +488,8 @@ public class NmrPipeReader {
 		
 		return nd;
 	}
-
+*/
+	
 	private static class NmrPipeFileReader {
 
 		private int[] vars = new int[HEADER_ENTRIES];
@@ -475,35 +573,10 @@ public class NmrPipeReader {
 			return bits;
 		}
 
-		// based on ideas I saw in nmrglue: maybe not what I want
+		// TODO: this is not based on DIMORDER. It always does raw XY dims
+		//   for planes. I might need to support XZ and XA (and even others?)
+		//   as well.
 		
-		private String oldFindDataType() {
-		
-			int dimCount = (int) getHeaderFloat(FDDIMCOUNT);
-			
-			if (dimCount < 1 || dimCount > 4)
- 				throw new IllegalArgumentException("dim count looks crazy "+dimCount);
-			
-			int lastDim = (int) getHeaderFloat(FDDIMORDER1);
-			
-			final int quadIndex;
-			if (lastDim == 1)
-				quadIndex = FDF2QUADFLAG;
-			else if (lastDim == 2)
-				quadIndex = FDF1QUADFLAG;
-			else if (lastDim == 3)
-				quadIndex = FDF3QUADFLAG;
-			else if (lastDim == 4)
-				quadIndex = FDF4QUADFLAG;
-			else
-				throw new IllegalArgumentException("illegal FDDIMORDER1 value = " + lastDim);
-			
-			if (getHeaderFloat(quadIndex) == 1.0)
-				return "real";
-			else
-				return "complex";
-		}
-
 		private Tuple2<String,Integer> findDataType() {
 		
 			int dimCount = (int) getHeaderFloat(FDDIMCOUNT);
@@ -519,11 +592,13 @@ public class NmrPipeReader {
 			if (dimCount >= 2)
 				numComponents *= (getHeaderFloat(FDF1QUADFLAG) == 1 ? 1 : 2);
 
+/*
 			if (dimCount >= 3)
 				numComponents *= (getHeaderFloat(FDF3QUADFLAG) == 1 ? 1 : 2);
 
 			if (dimCount >= 4)
 				numComponents *= (getHeaderFloat(FDF4QUADFLAG) == 1 ? 1 : 2);
+*/
 			
 			// TODO: do I want all of these cases below to return ("point",numComponents)
 			
@@ -538,10 +613,12 @@ public class NmrPipeReader {
 			if (numComponents == 4) {
 				return new Tuple2<>("quaternion", numComponents);
 			}
-			
+
+/*
 			if (numComponents == 8) {
 				return new Tuple2<>("octonion", numComponents);
 			}
+*/
 
 			return new Tuple2<>("point", numComponents);
 		}
@@ -739,6 +816,16 @@ public class NmrPipeReader {
 			if (dim == 4)
 				return dim4Label();
 			return "?";
+		}
+		
+		private int firstDimIndex() {
+			
+			return vars[FDDIMORDER1];  // probably X
+		}
+		
+		private int secondDimIndex() {
+			
+			return vars[FDDIMORDER2];  // usually Y but also could be Z or A
 		}
 		
 		// Find nrmpipe .c/.h code to verify all the formats I think exist
