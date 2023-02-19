@@ -1,2 +1,24 @@
+zorbage-nmr
+
 This repository contains code for loading various NMR file formats into zorbage
 structures for further processing.
+
+To learn more about Zorbage please visit https://github.com/bdezonia/zorbage
+
+How to include zorbage-nmr in your Maven project
+
+  Add the following dependency to your project's pom.xml:
+
+  <dependency>
+    <groupId>io.github.bdezonia</groupId>
+    <artifactId>zorbage-nmr</artifactId>
+    <version>0.0.1</version>
+  </dependency>
+
+How to include zorbage-nmr in a different build system
+
+  See https://search.maven.org/artifact/io.github.bdezonia/zorbage-nmr/0.0.1/jar
+  for instructions on how to reference zorbage-netcdf in build systems such as
+  Gradle or others.
+
+
