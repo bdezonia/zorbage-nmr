@@ -198,7 +198,7 @@ public class TwoDTextReader {
 			
 			long maxY = Long.MIN_VALUE;
 			
-			int realDataColumns = 0;
+			int numDataColumns = 0;
 			
 			while (br.ready()) {
 				
@@ -206,7 +206,7 @@ public class TwoDTextReader {
 				
 				String[] terms = line.trim().split("\\s+");
 				
-				realDataColumns = terms.length - 2;
+				numDataColumns = terms.length - 2;
 				
 				String xStr = terms[0];
 				
@@ -229,7 +229,7 @@ public class TwoDTextReader {
 			
 			fr.close();
 	
-			return new Tuple5<Integer,Long,Long,Long,Long>(realDataColumns, minX, maxX, minY, maxY);
+			return new Tuple5<Integer,Long,Long,Long,Long>(numDataColumns, minX, maxX, minY, maxY);
 			
 		} catch (Exception e) {
 
@@ -262,23 +262,23 @@ public class TwoDTextReader {
 		Tuple5<Integer,Long,Long,Long,Long> fileMetaData =
 				TwoDTextReader.metadata(filename);
 		
-		int numRealColumns = fileMetaData.a();
+		int numDataColumns = fileMetaData.a();
 
-		if (numRealColumns < 1 || numRealColumns > 8) {
+		if (numDataColumns < 1 || numDataColumns > 8) {
 
 			throw
 				new IllegalArgumentException(
-						"text file must have real data column count between 1 and 8");
+						"text file must have data column count between 1 and 8");
 		}
-		else if (numRealColumns <= 1) {
+		else if (numDataColumns <= 1) {
 			
 			return openDouble(filename);
 		}
-		else if (numRealColumns <= 2) {
+		else if (numDataColumns <= 2) {
 			
 			return openComplexDouble(filename);
 		}
-		else if (numRealColumns <= 4) {
+		else if (numDataColumns <= 4) {
 			
 			return openQuaternionDouble(filename);
 		}
