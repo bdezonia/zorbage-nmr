@@ -69,7 +69,7 @@ public class TwoDTextReader {
 	{
 		Tuple5<Integer,Long,Long,Long,Long> metadata = metadata(filename);
 
-		int numRealCols = metadata.a();
+		int numDataCols = metadata.a();
 		
 		long minX = metadata.b();
 		
@@ -119,12 +119,12 @@ public class TwoDTextReader {
 				
 				long y = Long.parseLong(yStr);
 				
-				for (int i = 0; i < Math.min(val.componentCount(), numRealCols); i++) {
+				for (int i = 0; i < Math.min(val.componentCount(), numDataCols); i++) {
 					
 					doubleVals[i] = Double.parseDouble(terms[i + 2]);
 				}
 
-				for (int i = Math.min(val.componentCount(), numRealCols); i < val.componentCount(); i++) {
+				for (int i = Math.min(val.componentCount(), numDataCols); i < val.componentCount(); i++) {
 
 					doubleVals[i] = 0;
 				}
