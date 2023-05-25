@@ -55,7 +55,9 @@ public class TwoDTextReader {
 	 * and return a type of data source based upon the algebra you pass in to this reader. This file
 	 * layout is based on some extraction or conversion of NmrPipe data. This reader can make a gridded
 	 * data set of various types (for example reals, complexes, quaternions, octonions, data tables,
-	 * etc.) based upon the Algebra passed to this reader.
+	 * etc.) based upon the Algebra passed to this reader. Note that the convention seems to be that
+	 * the origin of the data is at the upper left corner. Zorbage has a lower left origin convention
+	 * and thus the data is flipped in y during reading.  
 	 * 
 	 * @param <T> the algebra
 	 * @param <U> the types manipulated by the algebra
@@ -131,7 +133,7 @@ public class TwoDTextReader {
 				
 				val.setFromDoubles(doubleVals);
 				
-				vw.set(x-minX, y-minY, val);
+				vw.set(x-minX, maxY - 1 - (y-minY), val);
 			}
 			
 			data.setSource(filename);
