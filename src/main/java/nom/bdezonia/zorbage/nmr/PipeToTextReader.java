@@ -48,7 +48,7 @@ import nom.bdezonia.zorbage.type.real.float64.Float64Member;
  * @author Barry DeZonia
  *
  */
-public class TwoDTextReader {
+public class PipeToTextReader {
 
 	/**
 	 * Read a two dimensional text file where each row is <row number> <col number> <val1> <val2> ...
@@ -262,7 +262,7 @@ public class TwoDTextReader {
 	public static DataBundle open(String filename) {
 		
 		Tuple5<Integer,Long,Long,Long,Long> fileMetaData =
-				TwoDTextReader.metadata(filename);
+				PipeToTextReader.metadata(filename);
 		
 		int numDataColumns = fileMetaData.a();
 
@@ -301,7 +301,7 @@ public class TwoDTextReader {
 		DataBundle bundle = new DataBundle();
 		
 		DimensionedDataSource<Float64Member> data =
-				TwoDTextReader.read(filename, G.DBL);
+				PipeToTextReader.read(filename, G.DBL);
 		
 		bundle.dbls.add(data);
 		
@@ -318,7 +318,7 @@ public class TwoDTextReader {
 		DataBundle bundle = new DataBundle();
 		
 		DimensionedDataSource<ComplexFloat64Member> data =
-				TwoDTextReader.read(filename, G.CDBL);
+				PipeToTextReader.read(filename, G.CDBL);
 		
 		bundle.cdbls.add(data);
 		
@@ -335,7 +335,7 @@ public class TwoDTextReader {
 		DataBundle bundle = new DataBundle();
 		
 		DimensionedDataSource<QuaternionFloat64Member> data =
-				TwoDTextReader.read(filename, G.QDBL);
+				PipeToTextReader.read(filename, G.QDBL);
 		
 		bundle.qdbls.add(data);
 		
@@ -352,7 +352,7 @@ public class TwoDTextReader {
 		DataBundle bundle = new DataBundle();
 		
 		DimensionedDataSource<OctonionFloat64Member> data =
-				TwoDTextReader.read(filename, G.ODBL);
+				PipeToTextReader.read(filename, G.ODBL);
 		
 		bundle.odbls.add(data);
 		
