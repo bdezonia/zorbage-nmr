@@ -37,7 +37,7 @@ import nom.bdezonia.zorbage.data.DimensionedDataSource;
 import nom.bdezonia.zorbage.data.DimensionedStorage;
 import nom.bdezonia.zorbage.dataview.TwoDView;
 import nom.bdezonia.zorbage.misc.DataBundle;
-import nom.bdezonia.zorbage.tuple.Tuple5;
+import nom.bdezonia.zorbage.tuple.Tuple3;
 import nom.bdezonia.zorbage.type.complex.float64.ComplexFloat64Member;
 import nom.bdezonia.zorbage.type.octonion.float64.OctonionFloat64Member;
 import nom.bdezonia.zorbage.type.quaternion.float64.QuaternionFloat64Member;
@@ -51,13 +51,16 @@ import nom.bdezonia.zorbage.type.real.float64.Float64Member;
 public class PipeToTextReader {
 
 	/**
-	 * Read a two dimensional text file where each row is <row number> <col number> <val1> <val2> ...
-	 * and return a type of data source based upon the algebra you pass in to this reader. This file
-	 * layout is based on some extraction or conversion of NmrPipe data. This reader can make a gridded
-	 * data set of various types (for example reals, complexes, quaternions, octonions, data tables,
-	 * etc.) based upon the Algebra passed to this reader. Note that the convention seems to be that
-	 * the origin of the data is at the upper left corner. Zorbage has a lower left origin convention
-	 * and thus the data is flipped in y during reading.  
+	 * Read a two dimensional NMRPipe exported text file where each row is
+	 *  <row number> <col number> <val1> <val2> ...
+	 * and return a type of data source based upon the algebra you pass in
+	 * to this reader. This file layout is based on some extraction or
+	 * conversion of NmrPipe data. This reader can make a gridded
+	 * data set of various types (for example reals, complexes, quaternions,
+	 * octonions, data tables, etc.) based upon the Algebra passed to this
+	 * reader. Note that the convention seems to be that the origin of the
+	 * data is at the upper left corner. Zorbage has a lower left origin
+	 * convention and thus the data is flipped in y during reading.  
 	 * 
 	 * @param <T> the algebra
 	 * @param <U> the types manipulated by the algebra
@@ -69,22 +72,14 @@ public class PipeToTextReader {
 	public static <T extends Algebra<T,U>, U extends Allocatable<U> & SetFromDoubles & HasComponents>
 		DimensionedDataSource<U> read(String filename, T alg)
 	{
-		Tuple5<Integer,Long,Long,Long,Long> metadata = metadata(filename);
+		Tuple3<Integer,Long,Long> metadata = metadata(filename);
 
-		int numDataCols = metadata.a();
+		int numComponents = metadata.a();
 		
-		long minX = metadata.b();
+		long cols = metadata.b();
 		
-		long maxX = metadata.c();
+		long rows = metadata.c();
 
-		long minY = metadata.d();
-		
-		long maxY = metadata.e();
-		
-		long xDim = maxX - minX + 1;
-		
-		long yDim = maxY - minY + 1;
-		
 		U val = alg.construct();
 		
 		FileReader fr = null;
@@ -93,11 +88,7 @@ public class PipeToTextReader {
 		
 		try {
 			
-			fr = new FileReader(filename);
-		
-			br = new BufferedReader(fr);
-			
-			DimensionedDataSource<U> data = DimensionedStorage.allocate(val, new long[] {xDim, yDim});
+			DimensionedDataSource<U> data = DimensionedStorage.allocate(val, new long[] {cols, rows});
 			
 			fr = new FileReader(filename);
 			
@@ -113,27 +104,32 @@ public class PipeToTextReader {
 				
 				String[] terms = line.trim().split("\\s+");
 				
-				String xStr = terms[0];
+				String cStr = terms[0];
 				
-				String yStr = terms[1];
+				String rStr = terms[1];
 				
-				long x = Long.parseLong(xStr);
+				long c = Long.parseLong(cStr);
 				
-				long y = Long.parseLong(yStr);
+				long r = Long.parseLong(rStr);
 				
-				for (int i = 0; i < Math.min(val.componentCount(), numDataCols); i++) {
+				for (int i = 0; i < Math.min(val.componentCount(), numComponents); i++) {
 					
-					doubleVals[i] = Double.parseDouble(terms[i + 2]);
+					doubleVals[i] = Double.parseDouble(terms[2 + i]);
 				}
 
-				for (int i = Math.min(val.componentCount(), numDataCols); i < val.componentCount(); i++) {
+				for (int i = Math.min(val.componentCount(), numComponents); i < val.componentCount(); i++) {
 
 					doubleVals[i] = 0;
 				}
 				
 				val.setFromDoubles(doubleVals);
 				
-				vw.set(x-minX, maxY - 1 - (y-minY), val);
+				// old way that flipped y
+				//vw.set(c, rows-1-r, val);
+				
+				// new way that matches FRC code's TwoDTextReader so that
+				//   Barry can test his GFRC metric method on nmr pipe data.
+				vw.set(c, r, val);
 			}
 			
 			data.setSource(filename);
@@ -170,15 +166,15 @@ public class PipeToTextReader {
 	}
 
 	/**
-	 * Get important metadata about the given ascii text data file.
+	 * Get important metadata about the given NMRPipe text data file.
 	 * Used by the file readers to know how to allocate and populate
 	 * a correct data grid.
 	 * 
-	 * @param filename Name of the acsii text data file that contains numeric values.
+	 * @param filename Name of the NMRPipe text data file that contains numeric values.
 	 *  
-	 * @return A tuple of (numDataCols,minXCoord,maxXCoord,minYCoord,maxYCoord).
+	 * @return A tuple of (numComponents,numCols,numRows).
 	 */
-	public static Tuple5<Integer,Long,Long,Long,Long> metadata(String filename) {
+	public static Tuple3<Integer,Long,Long> metadata(String filename) {
 
 		FileReader fr = null;
 		
@@ -192,15 +188,15 @@ public class PipeToTextReader {
 			
 			// compute extents of data
 			
-			long minX = Long.MAX_VALUE;
+			long minC = Long.MAX_VALUE;
 		
-			long minY = Long.MAX_VALUE;
+			long minR = Long.MAX_VALUE;
 			
-			long maxX = Long.MIN_VALUE;
+			long maxC = Long.MIN_VALUE;
 			
-			long maxY = Long.MIN_VALUE;
+			long maxR = Long.MIN_VALUE;
 			
-			int numDataColumns = 0;
+			int numComponents = 0;
 			
 			while (br.ready()) {
 				
@@ -208,30 +204,30 @@ public class PipeToTextReader {
 				
 				String[] terms = line.trim().split("\\s+");
 				
-				numDataColumns = terms.length - 2;
+				numComponents = terms.length - 2;
 				
-				String xStr = terms[0];
+				String cStr = terms[0];
 				
-				String yStr = terms[1];
+				String rStr = terms[1];
 						
-				long x = Long.parseLong(xStr);
+				long c = Long.parseLong(cStr);
 				
-				long y = Long.parseLong(yStr);
+				long r = Long.parseLong(rStr);
 				
-				if (x < minX) minX = x;
+				if (c < minC) minC = c;
 	
-				if (x > maxX) maxX = x;
+				if (c > maxC) maxC = c;
 				
-				if (y < minY) minY = y;
+				if (r < minR) minR = r;
 				
-				if (y > maxY) maxY = y;
+				if (r > maxR) maxR = r;
 			}
 			
 			br.close();
 			
 			fr.close();
 	
-			return new Tuple5<Integer,Long,Long,Long,Long>(numDataColumns, minX, maxX, minY, maxY);
+			return new Tuple3<Integer,Long,Long>(numComponents, maxC - minC + 1, maxR - minR + 1);
 			
 		} catch (Exception e) {
 
@@ -255,43 +251,47 @@ public class PipeToTextReader {
 	}
 	
 	/**
+	 * Open an NMRPipe text file and return it in a DataBundle.
+	 * Depending upon the number of data columns in the file
+	 * this routine can create real, complex, quaternion, or
+	 * octonion data sets.
 	 * 
 	 * @param filename
 	 * @return
 	 */
 	public static DataBundle open(String filename) {
 		
-		Tuple5<Integer,Long,Long,Long,Long> fileMetaData =
+		Tuple3<Integer,Long,Long> fileMetaData =
 				PipeToTextReader.metadata(filename);
 		
-		int numDataColumns = fileMetaData.a();
+		int numComponents = fileMetaData.a();
 
-		if (numDataColumns < 1 || numDataColumns > 8) {
+		if (numComponents < 1 || numComponents > 8) {
 
 			throw
 				new IllegalArgumentException(
 						"text file must have data column count between 1 and 8");
 		}
-		else if (numDataColumns <= 1) {
+		else if (numComponents <= 1) {
 			
 			return openDouble(filename);
 		}
-		else if (numDataColumns <= 2) {
+		else if (numComponents <= 2) {
 			
 			return openComplexDouble(filename);
 		}
-		else if (numDataColumns <= 4) {
+		else if (numComponents <= 4) {
 			
 			return openQuaternionDouble(filename);
 		}
-		else {  // if here it must be between 5 and 8 cols
+		else {  // if here it must be between 5 and 8 components
 			
 			return openOctonionDouble(filename);
 		}
 	}
 	
 	/**
-	 * Open a 2d ascii text file as
+	 * Open a NMRPipe text file as real double data.
 	 *   
 	 * @param filename
 	 * @return
@@ -309,6 +309,7 @@ public class PipeToTextReader {
 	}
 
 	/**
+	 * Open a NMRPipe text file as complex double data.
 	 * 
 	 * @param filename
 	 * @return
@@ -326,6 +327,7 @@ public class PipeToTextReader {
 	}
 
 	/**
+	 * Open a NMRPipe text file as quaternion double data.
 	 * 
 	 * @param filename
 	 * @return
@@ -343,6 +345,7 @@ public class PipeToTextReader {
 	}
 	
 	/**
+	 * Open a NMRPipe text file as octonion double data.
 	 * 
 	 * @param filename
 	 * @return
