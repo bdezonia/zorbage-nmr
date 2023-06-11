@@ -37,7 +37,7 @@ import nom.bdezonia.zorbage.data.DimensionedDataSource;
 import nom.bdezonia.zorbage.data.DimensionedStorage;
 import nom.bdezonia.zorbage.dataview.TwoDView;
 import nom.bdezonia.zorbage.misc.DataBundle;
-import nom.bdezonia.zorbage.tuple.Tuple3;
+import nom.bdezonia.zorbage.tuple.Tuple5;
 import nom.bdezonia.zorbage.type.complex.float64.ComplexFloat64Member;
 import nom.bdezonia.zorbage.type.octonion.float64.OctonionFloat64Member;
 import nom.bdezonia.zorbage.type.quaternion.float64.QuaternionFloat64Member;
@@ -72,14 +72,20 @@ public class PipeToTextReader {
 	public static <T extends Algebra<T,U>, U extends Allocatable<U> & SetFromDoubles & HasComponents>
 		DimensionedDataSource<U> read(String filename, T alg)
 	{
-		Tuple3<Integer,Long,Long> metadata = metadata(filename);
+		Tuple5<Integer,Long,Long,Long,Long> metadata = metadata(filename);
 
 		int numComponents = metadata.a();
 		
-		long cols = metadata.b();
+		long minC = metadata.b();
 		
-		long rows = metadata.c();
+		long maxC = metadata.c();
+		
+		long minR = metadata.d();
+		
+		long maxR = metadata.e();
 
+		//System.out.println((maxR-minR+1) + " rows " + (maxC-minC+1) + " cols");
+		
 		U val = alg.construct();
 		
 		FileReader fr = null;
@@ -88,7 +94,7 @@ public class PipeToTextReader {
 		
 		try {
 			
-			DimensionedDataSource<U> data = DimensionedStorage.allocate(val, new long[] {cols, rows});
+			DimensionedDataSource<U> data = DimensionedStorage.allocate(val, new long[] {maxC-minC+1, maxR-minR+1});
 			
 			fr = new FileReader(filename);
 			
@@ -108,9 +114,9 @@ public class PipeToTextReader {
 				
 				String rStr = terms[1];
 				
-				long c = Long.parseLong(cStr);
+				long c = Long.parseLong(cStr) - minC;
 				
-				long r = Long.parseLong(rStr);
+				long r = Long.parseLong(rStr) - minR;
 				
 				for (int i = 0; i < Math.min(val.componentCount(), numComponents); i++) {
 					
@@ -129,6 +135,7 @@ public class PipeToTextReader {
 				
 				// new way that matches FRC code's TwoDTextReader so that
 				//   Barry can test his GFRC metric method on nmr pipe data.
+				
 				vw.set(c, r, val);
 			}
 			
@@ -174,7 +181,7 @@ public class PipeToTextReader {
 	 *  
 	 * @return A tuple of (numComponents,numCols,numRows).
 	 */
-	public static Tuple3<Integer,Long,Long> metadata(String filename) {
+	public static Tuple5<Integer,Long,Long,Long,Long> metadata(String filename) {
 
 		FileReader fr = null;
 		
@@ -227,7 +234,7 @@ public class PipeToTextReader {
 			
 			fr.close();
 	
-			return new Tuple3<Integer,Long,Long>(numComponents, maxC - minC + 1, maxR - minR + 1);
+			return new Tuple5<Integer,Long,Long,Long,Long>(numComponents, minC, maxC, minR, maxR);
 			
 		} catch (Exception e) {
 
@@ -261,7 +268,7 @@ public class PipeToTextReader {
 	 */
 	public static DataBundle open(String filename) {
 		
-		Tuple3<Integer,Long,Long> fileMetaData =
+		Tuple5<Integer,Long,Long,Long,Long> fileMetaData =
 				PipeToTextReader.metadata(filename);
 		
 		int numComponents = fileMetaData.a();
