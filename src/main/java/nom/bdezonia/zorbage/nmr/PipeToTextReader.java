@@ -83,6 +83,8 @@ public class PipeToTextReader {
 		long minR = metadata.d();
 		
 		long maxR = metadata.e();
+		
+		//long rows = maxR - minR + 1;
 
 		//System.out.println((maxR-minR+1) + " rows " + (maxC-minC+1) + " cols");
 		
