@@ -84,7 +84,7 @@ public class PipeToTextReader {
 		
 		long maxR = metadata.e();
 		
-		//long rows = maxR - minR + 1;
+		long rows = maxR - minR + 1;
 
 		//System.out.println((maxR-minR+1) + " rows " + (maxC-minC+1) + " cols");
 		
@@ -133,12 +133,12 @@ public class PipeToTextReader {
 				val.setFromDoubles(doubleVals);
 				
 				// old way that flipped y
-				//vw.set(c, rows-1-r, val);
+				vw.set(c, rows-1-r, val);
 				
 				// new way that matches FRC code's TwoDTextReader so that
 				//   Barry can test his GFRC metric method on nmr pipe data.
 				
-				vw.set(c, r, val);
+				//vw.set(c, r, val);
 			}
 			
 			data.setSource(filename);
