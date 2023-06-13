@@ -69,8 +69,12 @@ public class PipeToTextReader {
 	 * @param type The kind of data values we are wanting to create.
 	 * @return The file data as read into a DimensionedDataSource.
 	 */
-	public static <T extends Algebra<T,U>, U extends Allocatable<U> & SetFromDoubles & HasComponents>
-		DimensionedDataSource<U> read(String filename, T alg)
+	public static <T extends Algebra<T,U>,
+					U extends Allocatable<U> & SetFromDoubles & HasComponents>
+	
+		DimensionedDataSource<U>
+	
+			read(String filename, T alg)
 	{
 		Tuple5<Integer,Long,Long,Long,Long> metadata = metadata(filename);
 
