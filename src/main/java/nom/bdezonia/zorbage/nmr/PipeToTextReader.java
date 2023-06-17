@@ -274,6 +274,8 @@ public class PipeToTextReader {
 	 */
 	public static DataBundle open(String filename) {
 		
+		DataBundle bundle = new DataBundle();
+		
 		Tuple5<Integer,Long,Long,Long,Long> fileMetaData =
 				PipeToTextReader.metadata(filename);
 		
@@ -287,20 +289,22 @@ public class PipeToTextReader {
 		}
 		else if (numComponents <= 1) {
 			
-			return openDouble(filename);
+			bundle.dbls.add( openDouble(filename) );
 		}
 		else if (numComponents <= 2) {
 			
-			return openComplexDouble(filename);
+			bundle.cdbls.add( openComplexDouble(filename) );
 		}
 		else if (numComponents <= 4) {
 			
-			return openQuaternionDouble(filename);
+			bundle.qdbls.add( openQuaternionDouble(filename) );
 		}
 		else {  // if here it must be between 5 and 8 components
 			
-			return openOctonionDouble(filename);
+			bundle.odbls.add( openOctonionDouble(filename) );
 		}
+		
+		return bundle;
 	}
 	
 	/**
@@ -309,16 +313,14 @@ public class PipeToTextReader {
 	 * @param filename
 	 * @return
 	 */
-	public static DataBundle openDouble(String filename) {
+	public static
+	
+		DimensionedDataSource<Float64Member>
+	
+			openDouble(String filename)
+	{
 		
-		DataBundle bundle = new DataBundle();
-		
-		DimensionedDataSource<Float64Member> data =
-				PipeToTextReader.read(filename, G.DBL);
-		
-		bundle.dbls.add(data);
-		
-		return bundle;
+		return PipeToTextReader.read(filename, G.DBL);
 	}
 
 	/**
@@ -327,16 +329,13 @@ public class PipeToTextReader {
 	 * @param filename
 	 * @return
 	 */
-	public static DataBundle openComplexDouble(String filename) {
-		
-		DataBundle bundle = new DataBundle();
-		
-		DimensionedDataSource<ComplexFloat64Member> data =
-				PipeToTextReader.read(filename, G.CDBL);
-		
-		bundle.cdbls.add(data);
-		
-		return bundle;
+	public static
+	
+		DimensionedDataSource<ComplexFloat64Member>
+	
+			openComplexDouble(String filename)
+	{
+		return PipeToTextReader.read(filename, G.CDBL);
 	}
 
 	/**
@@ -345,16 +344,13 @@ public class PipeToTextReader {
 	 * @param filename
 	 * @return
 	 */
-	public static DataBundle openQuaternionDouble(String filename) {
-		
-		DataBundle bundle = new DataBundle();
-		
-		DimensionedDataSource<QuaternionFloat64Member> data =
-				PipeToTextReader.read(filename, G.QDBL);
-		
-		bundle.qdbls.add(data);
-		
-		return bundle;
+	public static
+	
+		DimensionedDataSource<QuaternionFloat64Member>
+	
+			openQuaternionDouble(String filename)
+	{
+		return PipeToTextReader.read(filename, G.QDBL);
 	}
 	
 	/**
@@ -363,15 +359,12 @@ public class PipeToTextReader {
 	 * @param filename
 	 * @return
 	 */
-	public static DataBundle openOctonionDouble(String filename) {
-		
-		DataBundle bundle = new DataBundle();
-		
-		DimensionedDataSource<OctonionFloat64Member> data =
-				PipeToTextReader.read(filename, G.ODBL);
-		
-		bundle.odbls.add(data);
-		
-		return bundle;
+	public static
+	
+		DimensionedDataSource<OctonionFloat64Member>
+	
+			openOctonionDouble(String filename)
+	{
+		return PipeToTextReader.read(filename, G.ODBL);
 	}
 }
