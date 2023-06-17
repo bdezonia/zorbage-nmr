@@ -51,6 +51,95 @@ import nom.bdezonia.zorbage.type.real.float64.Float64Member;
 public class PipeToTextReader {
 
 	/**
+	 * Get important metadata about the given NMRPipe text data file.
+	 * Used by the file readers to know how to allocate and populate
+	 * a correct data grid.
+	 * 
+	 * @param filename Name of the NMRPipe text data file that contains numeric values.
+	 *  
+	 * @return A tuple of (numComponents,minCol,maxCol,minRow,maxRow).
+	 */
+	public static
+	
+		Tuple5<Integer,Long,Long,Long,Long>
+	
+			readMetadata(String filename)
+	{
+		FileReader fr = null;
+		
+		BufferedReader br = null;
+		
+		try {
+			
+			fr = new FileReader(filename);
+		
+			br = new BufferedReader(fr);
+			
+			// compute extents of data
+			
+			long minC = Long.MAX_VALUE;
+		
+			long minR = Long.MAX_VALUE;
+			
+			long maxC = Long.MIN_VALUE;
+			
+			long maxR = Long.MIN_VALUE;
+			
+			int numComponents = 0;
+			
+			while (br.ready()) {
+				
+				String line = br.readLine();
+				
+				String[] terms = line.trim().split("\\s+");
+				
+				numComponents = terms.length - 2;
+				
+				String cStr = terms[0];
+				
+				String rStr = terms[1];
+						
+				long c = Long.parseLong(cStr);
+				
+				long r = Long.parseLong(rStr);
+				
+				if (c < minC) minC = c;
+	
+				if (c > maxC) maxC = c;
+				
+				if (r < minR) minR = r;
+				
+				if (r > maxR) maxR = r;
+			}
+			
+			br.close();
+			
+			fr.close();
+	
+			return new Tuple5<Integer,Long,Long,Long,Long>(numComponents, minC, maxC, minR, maxR);
+			
+		} catch (Exception e) {
+
+			System.out.println("Exception detected: "+e.getMessage());
+			
+			return null;
+			
+		} finally {
+
+			try {
+					
+				if (br != null) br.close();
+				
+				if (fr != null) fr.close();
+				
+			} catch (Exception e) {
+					
+				;
+			}
+		}
+	}
+
+	/**
 	 * Read a two dimensional NMRPipe exported text file where each row is
 	 *  <row number> <col number> <val1> <val2> ...
 	 * and return a type of data source based upon the algebra you pass in
@@ -76,7 +165,7 @@ public class PipeToTextReader {
 	
 			read(String filename, T alg)
 	{
-		Tuple5<Integer,Long,Long,Long,Long> metadata = metadata(filename);
+		Tuple5<Integer,Long,Long,Long,Long> metadata = readMetadata(filename);
 
 		int numComponents = metadata.a();
 		
@@ -177,135 +266,6 @@ public class PipeToTextReader {
 		
 		return null;
 	}
-
-	/**
-	 * Get important metadata about the given NMRPipe text data file.
-	 * Used by the file readers to know how to allocate and populate
-	 * a correct data grid.
-	 * 
-	 * @param filename Name of the NMRPipe text data file that contains numeric values.
-	 *  
-	 * @return A tuple of (numComponents,numCols,numRows).
-	 */
-	public static Tuple5<Integer,Long,Long,Long,Long> metadata(String filename) {
-
-		FileReader fr = null;
-		
-		BufferedReader br = null;
-		
-		try {
-			
-			fr = new FileReader(filename);
-		
-			br = new BufferedReader(fr);
-			
-			// compute extents of data
-			
-			long minC = Long.MAX_VALUE;
-		
-			long minR = Long.MAX_VALUE;
-			
-			long maxC = Long.MIN_VALUE;
-			
-			long maxR = Long.MIN_VALUE;
-			
-			int numComponents = 0;
-			
-			while (br.ready()) {
-				
-				String line = br.readLine();
-				
-				String[] terms = line.trim().split("\\s+");
-				
-				numComponents = terms.length - 2;
-				
-				String cStr = terms[0];
-				
-				String rStr = terms[1];
-						
-				long c = Long.parseLong(cStr);
-				
-				long r = Long.parseLong(rStr);
-				
-				if (c < minC) minC = c;
-	
-				if (c > maxC) maxC = c;
-				
-				if (r < minR) minR = r;
-				
-				if (r > maxR) maxR = r;
-			}
-			
-			br.close();
-			
-			fr.close();
-	
-			return new Tuple5<Integer,Long,Long,Long,Long>(numComponents, minC, maxC, minR, maxR);
-			
-		} catch (Exception e) {
-
-			System.out.println("Exception detected: "+e.getMessage());
-			
-			return null;
-			
-		} finally {
-
-			try {
-					
-				if (br != null) br.close();
-				
-				if (fr != null) fr.close();
-				
-			} catch (Exception e) {
-					
-				;
-			}
-		}
-	}
-	
-	/**
-	 * Open an NMRPipe text file and return it in a DataBundle.
-	 * Depending upon the number of data columns in the file
-	 * this routine can create real, complex, quaternion, or
-	 * octonion data sets.
-	 * 
-	 * @param filename
-	 * @return
-	 */
-	public static DataBundle open(String filename) {
-		
-		DataBundle bundle = new DataBundle();
-		
-		Tuple5<Integer,Long,Long,Long,Long> fileMetaData =
-				PipeToTextReader.metadata(filename);
-		
-		int numComponents = fileMetaData.a();
-
-		if (numComponents < 1 || numComponents > 8) {
-
-			throw
-				new IllegalArgumentException(
-						"text file must have data column count between 1 and 8");
-		}
-		else if (numComponents <= 1) {
-			
-			bundle.dbls.add( openDouble(filename) );
-		}
-		else if (numComponents <= 2) {
-			
-			bundle.cdbls.add( openComplexDouble(filename) );
-		}
-		else if (numComponents <= 4) {
-			
-			bundle.qdbls.add( openQuaternionDouble(filename) );
-		}
-		else {  // if here it must be between 5 and 8 components
-			
-			bundle.odbls.add( openOctonionDouble(filename) );
-		}
-		
-		return bundle;
-	}
 	
 	/**
 	 * Open a NMRPipe text file as real double data.
@@ -317,7 +277,7 @@ public class PipeToTextReader {
 	
 		DimensionedDataSource<Float64Member>
 	
-			openDouble(String filename)
+			readDouble(String filename)
 	{
 		
 		return PipeToTextReader.read(filename, G.DBL);
@@ -333,7 +293,7 @@ public class PipeToTextReader {
 	
 		DimensionedDataSource<ComplexFloat64Member>
 	
-			openComplexDouble(String filename)
+			readComplexDouble(String filename)
 	{
 		return PipeToTextReader.read(filename, G.CDBL);
 	}
@@ -348,7 +308,7 @@ public class PipeToTextReader {
 	
 		DimensionedDataSource<QuaternionFloat64Member>
 	
-			openQuaternionDouble(String filename)
+			readQuaternionDouble(String filename)
 	{
 		return PipeToTextReader.read(filename, G.QDBL);
 	}
@@ -363,8 +323,56 @@ public class PipeToTextReader {
 	
 		DimensionedDataSource<OctonionFloat64Member>
 	
-			openOctonionDouble(String filename)
+			readOctonionDouble(String filename)
 	{
 		return PipeToTextReader.read(filename, G.ODBL);
+	}
+	
+	/**
+	 * Open an NMRPipe text file and return it in a DataBundle.
+	 * Depending upon the number of data columns in the file
+	 * this routine can create real, complex, quaternion, or
+	 * octonion data sets.
+	 * 
+	 * @param filename
+	 * @return
+	 */
+	public static
+	
+		DataBundle
+		
+			read(String filename)
+	{
+		DataBundle bundle = new DataBundle();
+		
+		Tuple5<Integer,Long,Long,Long,Long> fileMetaData =
+				PipeToTextReader.readMetadata(filename);
+		
+		int numComponents = fileMetaData.a();
+
+		if (numComponents < 1 || numComponents > 8) {
+
+			throw
+				new IllegalArgumentException(
+						"text file must have data column count between 1 and 8");
+		}
+		else if (numComponents <= 1) {
+			
+			bundle.dbls.add( readDouble(filename) );
+		}
+		else if (numComponents <= 2) {
+			
+			bundle.cdbls.add( readComplexDouble(filename) );
+		}
+		else if (numComponents <= 4) {
+			
+			bundle.qdbls.add( readQuaternionDouble(filename) );
+		}
+		else {  // if here it must be between 5 and 8 components
+			
+			bundle.odbls.add( readOctonionDouble(filename) );
+		}
+		
+		return bundle;
 	}
 }
