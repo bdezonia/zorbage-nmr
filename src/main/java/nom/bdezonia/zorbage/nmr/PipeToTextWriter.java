@@ -30,7 +30,10 @@ import java.io.IOException;
 import nom.bdezonia.zorbage.algebra.Algebra;
 import nom.bdezonia.zorbage.algebra.GetAsDoubleArray;
 import nom.bdezonia.zorbage.data.DimensionedDataSource;
+import nom.bdezonia.zorbage.misc.DataSourceUtils;
 import nom.bdezonia.zorbage.sampling.IntegerIndex;
+import nom.bdezonia.zorbage.sampling.SamplingCartesianIntegerGrid;
+import nom.bdezonia.zorbage.sampling.SamplingIterator;
 
 /**
  * 
@@ -49,19 +52,6 @@ public class PipeToTextWriter {
 	
 		void write(String filename, T alg, DimensionedDataSource<U> data)
 	{
-		int numD = data.numDimensions();
-		
-		if (numD != 1 && numD != 2)
-			throw new IllegalArgumentException("PipeToTextWriter only writes files from 1d or 2d data sources.");
-		
-		U value = alg.construct();
-		
-		long cols = data.dimension(0);
-		
-		long rows = (numD == 1) ? 1 : data.dimension(1);
-
-		IntegerIndex idx = new IntegerIndex(numD);
-		
 		FileWriter fw = null;
 		
 		BufferedWriter bw = null;
@@ -72,37 +62,56 @@ public class PipeToTextWriter {
 			
 			bw = new BufferedWriter(fw);
 			
-			for (long r = rows - 1; r >= 0; r--) {  // PIPE has flipped Y coords
+			long[] dims = DataSourceUtils.dimensions(data);
+			
+			int numD = dims.length;
+			
+			IntegerIndex minPt = new IntegerIndex(numD);
+			
+			IntegerIndex maxPt = new IntegerIndex(numD);
+			
+			for (int i = 0; i < numD; i++) {
 				
-				if (numD > 1)
-					idx.set(1, r);
+				maxPt.set(i, dims[i]-1);
+			}
+			
+			SamplingCartesianIntegerGrid sampling = new SamplingCartesianIntegerGrid(minPt, maxPt);
+			
+			SamplingIterator<IntegerIndex> iter = sampling.iterator();
+			
+			U value = alg.construct();
+			
+			IntegerIndex idx = new IntegerIndex(numD);
+			
+			while (iter.hasNext()) {
+				
+				iter.next(idx);
 
-				for (long c = 0; c < cols; c++) {
+				data.get(idx, value);
+				
+				StringBuilder b = new StringBuilder();
+				
+				// TODO: PIPE has flipped Y coords and maybe more: must account for
+				
+				// TODO: Am I reporting the x,y,z,... grid in correct order? or do I need to reverse them? 
+				
+				for (int i = 0; i < numD; i++) {
 					
-					idx.set(0, c);
-					
-					data.get(idx, value);
-					
-					StringBuilder b = new StringBuilder();
-					
-					b.append(c);
 					b.append(' ');
-					
-					b.append(rows - 1 - r);
-					b.append(' ');
-					
-					final double[] values = value.getAsDoubleArray();
-					
-					for (int i = 0; i < values.length; i++) {
-					
-						b.append(values[i]);
-						b.append(' ');
-					}
-					
-					b.append('\n');
-
-					bw.write(b.toString());
+					b.append(idx.get(i) + 1);  // plus one because that is how the NMRPipe's pipe2text.tcl behaves 
 				}
+				
+				final double[] values = value.getAsDoubleArray();
+				
+				for (int i = 0; i < values.length; i++) {
+				
+					b.append(' ');
+					b.append(values[i]);
+				}
+				
+				b.append('\n');
+
+				bw.write(b.toString());
 			}
 			
 			bw.close();
