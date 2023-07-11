@@ -103,7 +103,9 @@ public class PipeToTextWriter {
 				
 				final double[] values = value.getAsDoubleArray();
 				
-				for (int i = 0; i < values.length; i++) {
+				// pipe's data format is limited to reals and complexes so write no more than 2 values
+				
+				for (int i = 0; i < Math.min(2, values.length); i++) {
 				
 					b.append(' ');
 					b.append(values[i]);
