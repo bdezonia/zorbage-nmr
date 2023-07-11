@@ -43,6 +43,8 @@ import nom.bdezonia.zorbage.type.octonion.float64.OctonionFloat64Member;
 import nom.bdezonia.zorbage.type.quaternion.float64.QuaternionFloat64Member;
 import nom.bdezonia.zorbage.type.real.float64.Float64Member;
 
+// TODO: this code is quite wrong. pipe2txt.tcl can handle and write n-d data
+
 /**
  * 
  * @author Barry DeZonia
