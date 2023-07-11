@@ -27,6 +27,8 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 
 import nom.bdezonia.zorbage.algebra.Algebra;
 import nom.bdezonia.zorbage.algebra.Allocatable;
@@ -35,9 +37,10 @@ import nom.bdezonia.zorbage.algebra.HasComponents;
 import nom.bdezonia.zorbage.algebra.SetFromDoubles;
 import nom.bdezonia.zorbage.data.DimensionedDataSource;
 import nom.bdezonia.zorbage.data.DimensionedStorage;
-import nom.bdezonia.zorbage.dataview.TwoDView;
 import nom.bdezonia.zorbage.misc.DataBundle;
-import nom.bdezonia.zorbage.tuple.Tuple5;
+import nom.bdezonia.zorbage.sampling.IntegerIndex;
+import nom.bdezonia.zorbage.sampling.RealIndex;
+import nom.bdezonia.zorbage.tuple.Tuple4;
 import nom.bdezonia.zorbage.type.complex.float64.ComplexFloat64Member;
 import nom.bdezonia.zorbage.type.octonion.float64.OctonionFloat64Member;
 import nom.bdezonia.zorbage.type.quaternion.float64.QuaternionFloat64Member;
@@ -63,31 +66,31 @@ public class PipeToTextReader {
 	 */
 	public static
 	
-		Tuple5<Integer,Long,Long,Long,Long>
+		Tuple4<Integer,Integer,IntegerIndex,IntegerIndex>
 	
 			readMetadata(String filename)
 	{
 		FileReader fr = null;
 		
 		BufferedReader br = null;
-		
+
 		try {
 			
 			fr = new FileReader(filename);
 		
 			br = new BufferedReader(fr);
 			
-			// compute extents of data
+			RealIndex min = null;
+
+			RealIndex max = null;
 			
-			long minC = Long.MAX_VALUE;
-		
-			long minR = Long.MAX_VALUE;
+			int numCols = 0;
 			
-			long maxC = Long.MIN_VALUE;
-			
-			long maxR = Long.MIN_VALUE;
-			
-			int numComponents = 0;
+			int numDims = 0;
+
+			int numDecimalCols = 0;
+
+			Set<Integer> decimalCols = new HashSet<>(); 
 			
 			while (br.ready()) {
 				
@@ -95,30 +98,55 @@ public class PipeToTextReader {
 				
 				String[] terms = line.trim().split("\\s+");
 				
-				numComponents = terms.length - 2;
-				
-				String cStr = terms[0];
-				
-				String rStr = terms[1];
+				numCols = terms.length;
+
+				if (min == null) {
+					
+					min = new RealIndex(numCols);
+					max = new RealIndex(numCols);
+					
+					for (int i = 0; i < numCols; i++) {
 						
-				long c = Long.parseLong(cStr);
+						min.set(i, Double.MAX_VALUE);
+						max.set(i, -Double.MAX_VALUE);
+					}
+				}
 				
-				long r = Long.parseLong(rStr);
-				
-				if (c < minC) minC = c;
-	
-				if (c > maxC) maxC = c;
-				
-				if (r < minR) minR = r;
-				
-				if (r > maxR) maxR = r;
+				for (int i = 0; i < numCols; i++) {
+					
+					double val = Double.parseDouble(terms[i]);
+					
+					if (Math.floor(val) != val)
+						decimalCols.add(i);
+					
+					if (val < min.get(i))
+						min.set(i, val);
+					
+					if (val > max.get(i))
+						max.set(i, val);
+				}
 			}
+
+			numDecimalCols = decimalCols.size();
 			
-			br.close();
+			numDims = numCols - numDecimalCols;
+
+			IntegerIndex minDim = new IntegerIndex(numDims);
 			
-			fr.close();
+			IntegerIndex maxDim = new IntegerIndex(numDims);
+			
+			for (int i = 0; i < numDims; i++) {
+				
+				long minVal = (long) min.get(i); 
+				
+				long maxVal = (long) max.get(i);
+				
+				minDim.set(i, minVal);
+				
+				maxDim.set(i, maxVal);
+			}
 	
-			return new Tuple5<Integer,Long,Long,Long,Long>(numComponents, minC, maxC, minR, maxR);
+			return new Tuple4<Integer,Integer,IntegerIndex,IntegerIndex>(numDims, numDecimalCols, minDim, maxDim);
 			
 		} catch (Exception e) {
 
@@ -142,19 +170,17 @@ public class PipeToTextReader {
 	}
 
 	/**
-	 * Read a two dimensional NMRPipe exported text file where each row is
-	 *  <row number> <col number> <val1> <val2> ...
+	 * Read a NMRPipe exported text file where each row is
+	 *  <dim number 1> <dim number 2> ... <data val 1> <data val 2> ...
 	 * and return a type of data source based upon the algebra you pass in
 	 * to this reader. This file layout is based on some extraction or
 	 * conversion of NmrPipe data. This reader can make a gridded
 	 * data set of various types (for example reals, complexes, quaternions,
 	 * octonions, data tables, etc.) based upon the Algebra passed to this
-	 * reader. Note that the convention seems to be that the origin of the
-	 * data is at the upper left corner. Zorbage has a lower left origin
-	 * convention and thus the data is flipped in y during reading.  
+	 * reader.
 	 * 
-	 * @param <T> the algebra
-	 * @param <U> the types manipulated by the algebra
+	 * @param <T> The algebra.
+	 * @param <U> The types manipulated by the algebra.
 	 * @param filename Name of the acsii text data file that contains numeric values.
 	 * @param alg The algebra used to create the kind of data values we want.
 	 * @param type The kind of data values we are wanting to create.
@@ -167,21 +193,29 @@ public class PipeToTextReader {
 	
 			read(String filename, T alg)
 	{
-		Tuple5<Integer,Long,Long,Long,Long> metadata = readMetadata(filename);
+		Tuple4<Integer,Integer,IntegerIndex,IntegerIndex> metadata = readMetadata(filename);
 
-		int numComponents = metadata.a();
+		int numDims = metadata.a();
 		
-		long minC = metadata.b();
-		
-		long maxC = metadata.c();
-		
-		long minR = metadata.d();
-		
-		long maxR = metadata.e();
-		
-		long rows = maxR - minR + 1;
+		int numDecimalCols = metadata.b();
 
-		//System.out.println((maxR-minR+1) + " rows " + (maxC-minC+1) + " cols");
+		if (numDims == 0) {
+			
+			System.out.println("Could not find any dimension columns in input file data!");
+			
+			return null;
+		}
+
+		if (numDecimalCols == 0) {
+			
+			System.out.println("Could not find any data columns in input file data!");
+			
+			return null;
+		}
+
+		IntegerIndex minDims = metadata.c();
+		
+		IntegerIndex maxDims = metadata.d();
 		
 		U val = alg.construct();
 		
@@ -190,8 +224,15 @@ public class PipeToTextReader {
 		BufferedReader br = null;
 		
 		try {
+
+			long[] dims = new long[numDims];
 			
-			DimensionedDataSource<U> data = DimensionedStorage.allocate(val, new long[] {maxC-minC+1, maxR-minR+1});
+			for (int i = 0; i < numDims; i++) {
+				
+				dims[i] = maxDims.get(i) - minDims.get(i) + 1;
+			}
+			
+			DimensionedDataSource<U> data = DimensionedStorage.allocate(val, dims);
 			
 			fr = new FileReader(filename);
 			
@@ -199,41 +240,34 @@ public class PipeToTextReader {
 			
 			double[] doubleVals = new double[val.componentCount()];
 			
-			TwoDView<U> vw = new TwoDView<>(data);
+			IntegerIndex coord = new IntegerIndex(numDims);
 			
 			while (br.ready()) {
 				
 				String line = br.readLine();
 				
 				String[] terms = line.trim().split("\\s+");
-				
-				String cStr = terms[0];
-				
-				String rStr = terms[1];
-				
-				long c = Long.parseLong(cStr) - minC;
-				
-				long r = Long.parseLong(rStr) - minR;
-				
-				for (int i = 0; i < Math.min(val.componentCount(), numComponents); i++) {
+
+				for (int i = 0; i < numDims; i++) {
+
+					long dimVal = Long.parseLong(terms[i]);
 					
-					doubleVals[i] = Double.parseDouble(terms[2 + i]);
+					coord.set(i, dimVal);
+				}
+				
+				for (int i = 0; i < Math.min(val.componentCount(), numDecimalCols); i++) {
+					
+					doubleVals[i] = Double.parseDouble(terms[numDims + i]);
 				}
 
-				for (int i = Math.min(val.componentCount(), numComponents); i < val.componentCount(); i++) {
+				for (int i = Math.min(val.componentCount(), numDecimalCols); i < val.componentCount(); i++) {
 
 					doubleVals[i] = 0;
 				}
 				
 				val.setFromDoubles(doubleVals);
 				
-				// old way that flipped y
-				vw.set(c, rows-1-r, val);
-				
-				// new way that matches FRC code's TwoDTextReader so that
-				//   Barry can test his GFRC metric method on nmr pipe data.
-				
-				//vw.set(c, r, val);
+				data.set(coord, val);
 			}
 			
 			data.setSource(filename);
@@ -347,26 +381,26 @@ public class PipeToTextReader {
 	{
 		DataBundle bundle = new DataBundle();
 		
-		Tuple5<Integer,Long,Long,Long,Long> fileMetaData =
+		Tuple4<Integer,Integer,IntegerIndex,IntegerIndex> fileMetaData =
 				PipeToTextReader.readMetadata(filename);
 		
-		int numComponents = fileMetaData.a();
+		int numDecimalCols = fileMetaData.b();
 
-		if (numComponents < 1 || numComponents > 8) {
+		if (numDecimalCols < 1 || numDecimalCols > 8) {
 
 			throw
 				new IllegalArgumentException(
 						"text file must have data column count between 1 and 8");
 		}
-		else if (numComponents <= 1) {
+		else if (numDecimalCols <= 1) {
 			
 			bundle.dbls.add( readDouble(filename) );
 		}
-		else if (numComponents <= 2) {
+		else if (numDecimalCols <= 2) {
 			
 			bundle.cdbls.add( readComplexDouble(filename) );
 		}
-		else if (numComponents <= 4) {
+		else if (numDecimalCols <= 4) {
 			
 			bundle.qdbls.add( readQuaternionDouble(filename) );
 		}
