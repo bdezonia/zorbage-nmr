@@ -43,10 +43,12 @@ import nom.bdezonia.zorbage.sampling.SamplingIterator;
 public class PipeToTextWriter {
 
 	/**
-	 * Write a 1d or 2d data set into NMRPipe's PipeToText format
+	 * Write a data set into NMRPipe's PipeToText format. Note that it
+	 * will only write real or complex valued data. Other data types
+	 * will have their extra components ignored.
 	 * @param filename Name of output file.
-	 * @param alg The algebra that can access values from the 1d or 2d data set. 
-	 * @param data The 1-d or 2-d data set to save to disk.
+	 * @param alg The algebra that can access values from the data set. 
+	 * @param data The data set to save to disk.
 	 */
 	public static <T extends Algebra<T,U>, U extends GetAsDoubleArray>
 	
@@ -89,6 +91,8 @@ public class PipeToTextWriter {
 
 				data.get(idx, value);
 				
+				double[] values = value.getAsDoubleArray();
+				
 				StringBuilder b = new StringBuilder();
 				
 				// TODO: PIPE has flipped Y coords and maybe more: must account for
@@ -100,8 +104,6 @@ public class PipeToTextWriter {
 					b.append(' ');
 					b.append(idx.get(i) + 1);  // plus one because that is how the NMRPipe's pipe2text.tcl behaves 
 				}
-				
-				final double[] values = value.getAsDoubleArray();
 				
 				// pipe's data format is limited to reals and complexes so write no more than 2 values
 				

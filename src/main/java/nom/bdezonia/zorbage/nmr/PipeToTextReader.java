@@ -46,8 +46,6 @@ import nom.bdezonia.zorbage.type.octonion.float64.OctonionFloat64Member;
 import nom.bdezonia.zorbage.type.quaternion.float64.QuaternionFloat64Member;
 import nom.bdezonia.zorbage.type.real.float64.Float64Member;
 
-// TODO: this code is quite wrong. pipe2txt.tcl can handle and write n-d data
-
 /**
  * 
  * @author Barry DeZonia
@@ -62,7 +60,7 @@ public class PipeToTextReader {
 	 * 
 	 * @param filename Name of the NMRPipe text data file that contains numeric values.
 	 *  
-	 * @return A tuple of (numComponents,minCol,maxCol,minRow,maxRow).
+	 * @return A tuple of (numDims, numDecimalCols, minDim, maxDim).
 	 */
 	public static
 	
@@ -171,9 +169,9 @@ public class PipeToTextReader {
 
 	/**
 	 * Read a NMRPipe exported text file where each row is
-	 *  <dim number 1> <dim number 2> ... <data val 1> <data val 2> ...
+	 *  <dim number 1> <dim number 2> ... <data val 1> <optional data val 2>
 	 * and return a type of data source based upon the algebra you pass in
-	 * to this reader. This file layout is based on some extraction or
+	 * to this reader. The file layout is based on some extraction or
 	 * conversion of NmrPipe data. This reader can make a gridded
 	 * data set of various types (for example reals, complexes, quaternions,
 	 * octonions, data tables, etc.) based upon the Algebra passed to this
