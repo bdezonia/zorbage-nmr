@@ -242,6 +242,8 @@ public class PipeToTextReader {
 			
 			IntegerIndex coord = new IntegerIndex(numDims);
 			
+			IntegerIndex fixedCoord = new IntegerIndex(numDims);
+			
 			while (br.ready()) {
 				
 				String line = br.readLine();
@@ -266,8 +268,15 @@ public class PipeToTextReader {
 				}
 				
 				val.setFromDoubles(doubleVals);
-				
-				data.set(coord, val);
+
+				for (int i = 0; i < numDims; i++) {
+					
+					long fixedVal = coord.get(i) - minDims.get(i);
+					
+					fixedCoord.set(i, fixedVal);
+				}
+
+				data.set(fixedCoord, val);
 			}
 			
 			data.setSource(filename);
