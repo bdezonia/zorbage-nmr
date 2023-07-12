@@ -269,9 +269,16 @@ public class PipeToTextReader {
 
 				for (int i = 0; i < numDims; i++) {
 					
-					long fixedVal = coord.get(i) - minDims.get(i);
+					long pos = coord.get(i) - minDims.get(i);  // NMRPipe text data has 1-based origin. Subtract 1.
 					
-					fixedCoord.set(i, fixedVal);
+					if (i != 0) {
+						
+						// flip all dimensions except X: based on a conversation with Frank Delaglio.
+						
+						pos = dims[i] - 1 - pos;
+					}
+					
+					fixedCoord.set(i, pos);
 				}
 
 				data.set(fixedCoord, val);

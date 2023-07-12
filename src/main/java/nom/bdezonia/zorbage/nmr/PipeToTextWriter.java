@@ -95,14 +95,23 @@ public class PipeToTextWriter {
 				
 				StringBuilder b = new StringBuilder();
 				
-				// TODO: PIPE has flipped Y coords and maybe more: must account for
-				
-				// TODO: Am I reporting the x,y,z,... grid in correct order? or do I need to reverse them? 
+				// TODO: Am I reporting the x,y,z,a,... grid in correct order? or do I need to reverse them? 
 				
 				for (int i = 0; i < numD; i++) {
 					
+					long pos = idx.get(i);
+					
+					if (i != 0) {
+						
+						// flip all dimensions except X: based on a conversation with Frank Delaglio.
+						
+						pos = dims[i] - 1 - pos;
+					}
+					
+					pos = pos + 1;  // plus one because NMRPipe's pipe2text.tcl has 1-based origins for array data
+					
 					b.append(' ');
-					b.append(idx.get(i) + 1);  // plus one because that is how the NMRPipe's pipe2text.tcl behaves 
+					b.append(pos); 
 				}
 				
 				// pipe's data format is limited to reals and complexes so write no more than 2 values
