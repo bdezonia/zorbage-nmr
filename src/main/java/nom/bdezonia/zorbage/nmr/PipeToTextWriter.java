@@ -66,24 +66,15 @@ public class PipeToTextWriter {
 			
 			long[] dims = DataSourceUtils.dimensions(data);
 			
-			int numD = dims.length;
-			
-			IntegerIndex minPt = new IntegerIndex(numD);
-			
-			IntegerIndex maxPt = new IntegerIndex(numD);
-			
-			for (int i = 0; i < numD; i++) {
-				
-				maxPt.set(i, dims[i]-1);
-			}
-			
-			SamplingCartesianIntegerGrid sampling = new SamplingCartesianIntegerGrid(minPt, maxPt);
+			SamplingCartesianIntegerGrid sampling =
+					
+					new SamplingCartesianIntegerGrid(dims);
 			
 			SamplingIterator<IntegerIndex> iter = sampling.iterator();
 			
 			U value = alg.construct();
 			
-			IntegerIndex idx = new IntegerIndex(numD);
+			IntegerIndex idx = new IntegerIndex(dims.length);
 			
 			while (iter.hasNext()) {
 				
@@ -97,7 +88,7 @@ public class PipeToTextWriter {
 				
 				// TODO: Am I reporting the x,y,z,a,... grid in correct order? or do I need to reverse them? 
 				
-				for (int i = 0; i < numD; i++) {
+				for (int i = 0; i < dims.length; i++) {
 					
 					long pos = idx.get(i);
 					
