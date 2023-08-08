@@ -12,12 +12,12 @@ How to include zorbage-nmr in your Maven project
   <dependency>
     <groupId>io.github.bdezonia</groupId>
     <artifactId>zorbage-nmr</artifactId>
-    <version>0.0.1</version>
+    <version>0.0.2</version>
   </dependency>
 
 How to include zorbage-nmr in a different build system
 
-  See https://search.maven.org/artifact/io.github.bdezonia/zorbage-nmr/0.0.1/jar
+  See https://search.maven.org/artifact/io.github.bdezonia/zorbage-nmr/0.0.2/jar
   for instructions on how to reference zorbage-netcdf in build systems such as
   Gradle or others.
 
