@@ -52,6 +52,13 @@ import nom.bdezonia.zorbage.type.real.float32.Float32Member;
 @SuppressWarnings("unused")
 public class NmrPipeReader {
 
+	public static void main(String[] args) {
+		
+		//DataBundle bundle = NmrPipeReader.open("/home/bdz/dev/zorbage-nmr/CC_50ms.ft2");
+		//DataBundle bundle = NmrPipeReader.open("/home/bdz/dev/zorbage-nmr/CC_50ms-short.ft2");
+		DataBundle bundle = NmrPipeReader.open("/home/bdz/dev/zorbage-nmr/data.ft2");
+	}
+
 	private static int HEADER_ENTRIES = 512;   // 512 floats
 	private static int HEADER_BYTE_SIZE = HEADER_ENTRIES * 4;
 	
@@ -174,6 +181,8 @@ public class NmrPipeReader {
 			}
 
 			System.out.println();
+
+			System.out.println("more file data? "+fis.getChannel().position()+ " " + file.length());
 			
 			System.out.println("raw floats read = " + numFloats);
 			
@@ -763,14 +772,14 @@ public class NmrPipeReader {
 
 			// one and two interchanged like nmrpipe code
 
-			return intsToString(FDF2LABEL, 2);
+			return intsToString(FDF2LABEL, 2);  // looks backwards
 		}
 
 		private String dim2Label() {
 			
 			// one and two interchanged like nmrpipe code
 			
-			return intsToString(FDF1LABEL, 2);
+			return intsToString(FDF1LABEL, 2);  // looks backwards
 		}
 
 		private String dim3Label() {
@@ -788,9 +797,9 @@ public class NmrPipeReader {
 			// one and two interchanged like nmrpipe code
 			
 			if (dim == 1)
-				return intsToString(FDF2LABEL+0, 1);
+				return intsToString(FDF2LABEL+0, 1);  // looks backwards
 			if (dim == 2)
-				return intsToString(FDF1LABEL+0, 1);
+				return intsToString(FDF1LABEL+0, 1);  // looks backwards
 			if (dim == 3)
 				return intsToString(FDF3LABEL+0, 1);
 			if (dim == 4)
@@ -803,9 +812,9 @@ public class NmrPipeReader {
 			// one and two interchanged like nmrpipe code
 			
 			if (dim == 1)
-				return intsToString(FDF2LABEL+1, 1);
+				return intsToString(FDF2LABEL+1, 1);  // looks backwards
 			if (dim == 2)
-				return intsToString(FDF1LABEL+1, 1);
+				return intsToString(FDF1LABEL+1, 1);  // looks backwards
 			if (dim == 3)
 				return intsToString(FDF3LABEL+1, 1);
 			if (dim == 4)
@@ -836,6 +845,28 @@ public class NmrPipeReader {
 		private int secondDimIndex() {
 			
 			return vars[FDDIMORDER2];  // usually Y but also could be Z or A
+		}
+		
+		private int thirdDimIndex() {  // usually Z
+			
+			return vars[FDDIMORDER3];
+		}
+		
+		private int fourthDimIndex() {
+			
+			return vars[FDDIMORDER4];  // usually A
+		}
+		
+		private int dimIndex(int dim) {
+			if (dim == 1)
+				return firstDimIndex();
+			if (dim == 2)
+				return secondDimIndex();
+			if (dim == 3)
+				return thirdDimIndex();
+			if (dim == 4)
+				return fourthDimIndex();
+			return -1;
 		}
 		
 		// Find nrmpipe .c/.h code to verify all the formats I think exist
