@@ -30,12 +30,17 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Arrays;
 
+import nom.bdezonia.zorbage.algebra.Algebra;
 import nom.bdezonia.zorbage.algebra.G;
 import nom.bdezonia.zorbage.data.NdData;
 import nom.bdezonia.zorbage.datasource.IndexedDataSource;
 import nom.bdezonia.zorbage.metadata.MetaDataStore;
 import nom.bdezonia.zorbage.misc.DataBundle;
+import nom.bdezonia.zorbage.misc.DataSourceUtils;
 import nom.bdezonia.zorbage.misc.LongUtils;
+import nom.bdezonia.zorbage.sampling.IntegerIndex;
+import nom.bdezonia.zorbage.sampling.SamplingCartesianIntegerGrid;
+import nom.bdezonia.zorbage.sampling.SamplingIterator;
 import nom.bdezonia.zorbage.storage.Storage;
 import nom.bdezonia.zorbage.tuple.Tuple2;
 import nom.bdezonia.zorbage.tuple.Tuple4;
@@ -77,8 +82,9 @@ public class NmrPipeReader {
 		
 		DataBundle bundle = new DataBundle();
 
-		Tuple5<String, Integer, long[], IndexedDataSource<Float32Member>, MetaDataStore> data =
-				readFloats(filename, numFloats);
+		Tuple5<String, Integer, long[], IndexedDataSource<Float32Member>, MetaDataStore>
+		
+			data = readFloats(filename, numFloats);
 
 		if (data.a().equals("real")) {
 
@@ -268,6 +274,8 @@ public class NmrPipeReader {
 		NdData<Float32Member> nd = new NdData<>(rawDims, numbers);
 		
 		nd.metadata().merge(metadata);
+
+		flipAroundY(G.FLT, nd);
 		
 		System.out.println();
 		
@@ -313,6 +321,8 @@ public class NmrPipeReader {
 			
 			for (long y = 0; y < numY; y++) {
 
+				complex.setR(0);
+				
 				complex.setI(0);
 				
 				// read the R values
@@ -364,6 +374,8 @@ public class NmrPipeReader {
 		NdData<ComplexFloat32Member> nd = new NdData<>(dims, complexes);
 		
 		nd.metadata().merge(metadata);
+		
+		flipAroundY(G.CFLT, nd);
 		
 		System.out.println();
 		
@@ -422,8 +434,10 @@ public class NmrPipeReader {
 			
 			for (long y = 0; y < numY; y++) {
 
-				quat.setI(0);
+				quat.setR(0);
 				
+				quat.setI(0);
+
 				quat.setJ(0);
 				
 				quat.setK(0);
@@ -504,6 +518,8 @@ public class NmrPipeReader {
 		
 		nd.metadata().merge(metadata);
 		
+		flipAroundY(G.QFLT, nd);
+		
 		System.out.println();
 		
 		System.out.println("final type is quaternion");
@@ -513,6 +529,58 @@ public class NmrPipeReader {
 		System.out.println("final dims = " + Arrays.toString(dims));
 		
 		return nd;
+	}
+	
+	private static <T extends Algebra<T,U>, U>
+	
+		void flipAroundY(T algebra, NdData<U> data)
+	
+	{
+		long[] dims = DataSourceUtils.dimensions(data);
+		
+		if (dims.length < 2)
+			return;
+		
+		long mid = dims[1] / 2;
+		
+		long[] halfDims = dims.clone();
+		
+		halfDims[1] = mid;
+		
+		U firstVal = algebra.construct();
+		
+		U secondVal = algebra.construct();
+		
+		IntegerIndex index1 = new IntegerIndex(dims.length);
+		
+		IntegerIndex index2 = new IntegerIndex(dims.length);
+		
+		SamplingCartesianIntegerGrid sampling =
+				
+			new SamplingCartesianIntegerGrid(halfDims);
+		
+		SamplingIterator<IntegerIndex> iter = sampling.iterator();
+		
+		while (iter.hasNext()) {
+			
+			iter.next(index1);
+			
+			index2.set(index1);
+			
+			long y = index1.get(1);
+			
+			long newY = dims[1] - y - 1;
+			
+			index2.set(1, newY);
+			
+			data.get(index1, firstVal);
+			
+			data.get(index2, secondVal);
+
+			data.set(index2, firstVal);
+			
+			data.set(index1, secondVal);
+		}
 	}
 
 	private static class NmrPipeFileReader {
