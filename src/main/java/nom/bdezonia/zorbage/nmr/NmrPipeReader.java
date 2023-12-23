@@ -61,7 +61,10 @@ public class NmrPipeReader {
 		
 		//DataBundle bundle = NmrPipeReader.open("/home/bdz/dev/zorbage-nmr/CC_50ms.ft2");
 		//DataBundle bundle = NmrPipeReader.open("/home/bdz/dev/zorbage-nmr/CC_50ms-short.ft2");
-		DataBundle bundle = NmrPipeReader.open("/home/bdz/dev/zorbage-nmr/data.ft2");
+		//DataBundle bundle = NmrPipeReader.open("/home/bdz/dev/zorbage-nmr/data.ft2");
+		
+		DataBundle bundle = NmrPipeReader.open("/home/bdz/dev/zorbage-nmr/C50C50C_1.ft123");
+		
 	}
 
 	private static int HEADER_ENTRIES = 512;   // 512 floats
