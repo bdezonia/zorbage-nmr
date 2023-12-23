@@ -3,4 +3,4 @@
 .settings
 /target/
 nmrpipe-format-dir
-*.ft?
+*.ft*
