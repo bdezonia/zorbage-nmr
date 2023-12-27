@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>io.github.bdezonia</groupId>
   <artifactId>zorbage-nmr</artifactId>
-  <version>0.0.3-SNAPSHOT</version>
+  <version>0.0.3</version>
   <name>zorbage-nmr</name>
   <description>zorbage-nmr: code for populating NMR file data into zorbage structures for further processing</description>
   <url>https://github.com/bdezonia/zorbage-nmr</url>
