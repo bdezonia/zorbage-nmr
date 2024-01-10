@@ -93,18 +93,24 @@ public class NmrPipeReader {
 
 			NdData<Float32Member> nd = realDataSource(data.b(), data.c(), data.d(), data.e());
 
+			nd.setSource(filename);
+			
 			bundle.flts.add(nd);
 		}
 		else if (data.a().equals("complex")) {
 			
 			NdData<ComplexFloat32Member> nd = complexDataSource(data.b(), data.c(), data.d(), data.e());
 
+			nd.setSource(filename);
+			
 			bundle.cflts.add(nd);
 		}
 		else if (data.a().equals("quaternion")) {
 			
 			NdData<QuaternionFloat32Member> nd = quaternionDataSource(data.b(), data.c(), data.d(), data.e());
 
+			nd.setSource(filename);
+			
 			bundle.qflts.add(nd);
 		}
 		else if (data.a().equals("point")) {
