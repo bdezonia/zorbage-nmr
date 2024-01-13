@@ -13,7 +13,7 @@ public class Main {
 		
 		System.out.println("GOING TO READ FILE: "+filename);
 		
-		DataBundle files = NmrPipeReader.open(filename);
+		DataBundle files = NmrPipeReader.readAllDatasets(filename);
 		
 		System.out.println();
 		

@@ -391,7 +391,7 @@ public class PipeToTextReader {
 	
 		DataBundle
 		
-			read(String filename)
+			readAllDatasets(String filename)
 	{
 		DataBundle bundle = new DataBundle();
 		

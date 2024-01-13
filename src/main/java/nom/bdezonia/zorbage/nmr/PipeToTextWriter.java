@@ -52,7 +52,7 @@ public class PipeToTextWriter {
 	 */
 	public static <T extends Algebra<T,U>, U extends GetAsDoubleArray>
 	
-		void write(String filename, T alg, DimensionedDataSource<U> data)
+		void writeAs(String filename, T alg, DimensionedDataSource<U> data)
 	{
 		FileWriter fw = null;
 		

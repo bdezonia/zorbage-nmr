@@ -63,7 +63,7 @@ public class NmrPipeReader {
 		//DataBundle bundle = NmrPipeReader.open("/home/bdz/dev/zorbage-nmr/CC_50ms-short.ft2");
 		//DataBundle bundle = NmrPipeReader.open("/home/bdz/dev/zorbage-nmr/data.ft2");
 		
-		DataBundle bundle = NmrPipeReader.open("/home/bdz/dev/zorbage-nmr/C50C50C_1.ft123");
+		DataBundle bundle = NmrPipeReader.readAllDatasets("/home/bdz/dev/zorbage-nmr/C50C50C_1.ft123");
 		
 	}
 
@@ -79,7 +79,7 @@ public class NmrPipeReader {
 	 * @param filename
 	 * @return
 	 */
-	public static DataBundle open(String filename) {
+	public static DataBundle readAllDatasets(String filename) {
 		
 		long numFloats = preprocessFile(filename);
 		
