@@ -98,9 +98,7 @@ public class NmrPipeReader {
 	
 		} catch (URISyntaxException e) {
 			
-			System.out.println("Bad name for file: "+e.getMessage());
-			
-			return new DataBundle();
+			throw new IllegalArgumentException("Bad name for file: "+e.getMessage());
 		}
 	}
 
@@ -115,8 +113,6 @@ public class NmrPipeReader {
 			
 			readAllDatasets(URI fileURI)
 	{
-		System.out.println("URI is "+fileURI.toString());
-		
 		long numFloats = preprocessFile(fileURI);
 		
 		DataBundle bundle = new DataBundle();
