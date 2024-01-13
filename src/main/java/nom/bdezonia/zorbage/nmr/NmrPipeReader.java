@@ -28,6 +28,11 @@ import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.Arrays;
 
 import nom.bdezonia.zorbage.algebra.Algebra;
@@ -79,21 +84,52 @@ public class NmrPipeReader {
 	 * @param filename
 	 * @return
 	 */
-	public static DataBundle readAllDatasets(String filename) {
+	public static
+	
+		DataBundle
 		
-		long numFloats = preprocessFile(filename);
+			readAllDatasets(String filename)
+	{
+		try {
+		
+			URI uri = new URI("file", null, new File(filename).getAbsolutePath(), null);
+			
+			return readAllDatasets(uri);
+	
+		} catch (URISyntaxException e) {
+			
+			System.out.println("Bad name for file: "+e.getMessage());
+			
+			return new DataBundle();
+		}
+	}
+
+	/**
+	 * 
+	 * @param filename
+	 * @return
+	 */
+	public static
+	
+		DataBundle
+			
+			readAllDatasets(URI fileURI)
+	{
+		System.out.println("URI is "+fileURI.toString());
+		
+		long numFloats = preprocessFile(fileURI);
 		
 		DataBundle bundle = new DataBundle();
 
 		Tuple5<String, Integer, long[], IndexedDataSource<Float32Member>, MetaDataStore>
 		
-			data = readFloats(filename, numFloats);
+			data = readFloats(fileURI, numFloats);
 
 		if (data.a().equals("real")) {
 
 			NdData<Float32Member> nd = realDataSource(data.b(), data.c(), data.d(), data.e());
 
-			nd.setSource(filename);
+			nd.setSource(fileURI.toString());
 			
 			bundle.flts.add(nd);
 		}
@@ -101,7 +137,7 @@ public class NmrPipeReader {
 			
 			NdData<ComplexFloat32Member> nd = complexDataSource(data.b(), data.c(), data.d(), data.e());
 
-			nd.setSource(filename);
+			nd.setSource(fileURI.toString());
 			
 			bundle.cflts.add(nd);
 		}
@@ -109,7 +145,7 @@ public class NmrPipeReader {
 			
 			NdData<QuaternionFloat32Member> nd = quaternionDataSource(data.b(), data.c(), data.d(), data.e());
 
-			nd.setSource(filename);
+			nd.setSource(fileURI.toString());
 			
 			bundle.qflts.add(nd);
 		}
@@ -127,46 +163,59 @@ public class NmrPipeReader {
 		return bundle;
 	}
 	
-	private static long preprocessFile(String filename) {
+	private static
+	
+		long
 		
-		File file = new File(filename);
-		
-		if (!file.exists()) {
+			preprocessFile(URI fileURI)
+	{
+		try {
 			
-			throw new IllegalArgumentException("File not found: "+filename);
-		}
-		
-		if (!file.canRead()) {
+			InputStream is = fileURI.toURL().openStream();
 			
-			throw new IllegalArgumentException("File permissions do not allow read: "+filename);
-		}
+			if (is == null) {
+				
+				throw new IllegalArgumentException("Data not found: "+fileURI);
+			}
+			
+			long fileLength = 0;
+			
+			while (is.read() != -1) fileLength++;
+			
+			is.close();
 
-		long fileLength = file.length();
-		
-		if (fileLength < HEADER_BYTE_SIZE) {
 			
-			throw new IllegalArgumentException("File is too small to contain nrmpipe data: "+filename);
-		}
-		
-		if ((fileLength % 4) != 0) {
+			if (fileLength < HEADER_BYTE_SIZE) {
+				
+				throw new IllegalArgumentException("Source is too small to contain nrmpipe data: "+fileURI);
+			}
 			
-			throw new IllegalArgumentException("file cannot be evenly divided into floats");
-		}
-		
-		long numFloats = (fileLength - HEADER_BYTE_SIZE) / 4;
+			if ((fileLength % 4) != 0) {
+				
+				throw new IllegalArgumentException("Source cannot be evenly divided into floats");
+			}
+			
+			long numFloats = (fileLength - HEADER_BYTE_SIZE) / 4;
 
-		return numFloats;
+			return numFloats;
+
+		} catch (IOException e) {
+		
+			throw new IllegalArgumentException("Error: "+e.getMessage());
+		}
 	}
 
-	private static Tuple5<String, Integer, long[], IndexedDataSource<Float32Member>, MetaDataStore>
-		readFloats(String filename, long numFloats)
+	private static
+	
+		Tuple5<String, Integer, long[], IndexedDataSource<Float32Member>,
+				MetaDataStore>
+	
+			readFloats(URI fileURI, long numFloats)
 	{
 		IndexedDataSource<Float32Member> data =
 				Storage.allocate(G.FLT.construct(), numFloats);
 
-		File file = new File(filename);
-		
-		FileInputStream fis = null;
+		InputStream is = null;
 
 		BufferedInputStream bis = null;
 
@@ -174,9 +223,9 @@ public class NmrPipeReader {
 		
 		try {
 			
-			fis = new FileInputStream(file);
+			is = fileURI.toURL().openStream();
 
-			bis = new BufferedInputStream(fis);
+			bis = new BufferedInputStream(is);
 
 			dis = new DataInputStream(bis);
 
@@ -197,8 +246,6 @@ public class NmrPipeReader {
 
 			System.out.println();
 
-			System.out.println("more file data? "+fis.getChannel().position()+ " " + file.length());
-			
 			System.out.println("raw floats read = " + numFloats);
 			
 			long[] dims = reader.findDims();
@@ -243,7 +290,7 @@ public class NmrPipeReader {
 			
 		} catch (IOException e) {
 			
-			throw new IllegalArgumentException("IOException during file read! "+e.getMessage());
+			throw new IllegalArgumentException("IOException during data read! "+e.getMessage());
 			
 		} finally {
 
@@ -253,7 +300,7 @@ public class NmrPipeReader {
 				
 				if (bis != null) bis.close();
 
-				if (fis != null) fis.close();
+				if (is != null) is.close();
 				
 			} catch (Exception e) {
 				
@@ -262,8 +309,12 @@ public class NmrPipeReader {
 		}
 	}
 
-	private static NdData<Float32Member> realDataSource(int numComponents, long[] rawDims, IndexedDataSource<Float32Member> numbers, MetaDataStore metadata) {
-
+	private static
+	
+		NdData<Float32Member>
+	
+			realDataSource(int numComponents, long[] rawDims, IndexedDataSource<Float32Member> numbers, MetaDataStore metadata)
+	{
 		if (numComponents != 1 || (numbers.size() % numComponents) != 0)
 			throw new IllegalArgumentException("suspicious input to real data source allocation routine");
 		
@@ -297,8 +348,12 @@ public class NmrPipeReader {
 		return nd;
 	}
 	
-	private static NdData<ComplexFloat32Member> complexDataSource(int numComponents, long[] rawDims, IndexedDataSource<Float32Member> numbers, MetaDataStore metadata) {
-
+	private static
+	
+		NdData<ComplexFloat32Member>
+	
+			complexDataSource(int numComponents, long[] rawDims, IndexedDataSource<Float32Member> numbers, MetaDataStore metadata)
+	{
 		if (numComponents != 2 || (numbers.size() % numComponents) != 0)
 			throw new IllegalArgumentException("suspicious input to complex data source allocation routine");
 
@@ -397,8 +452,12 @@ public class NmrPipeReader {
 		return nd;
 	}
 
-	private static NdData<QuaternionFloat32Member> quaternionDataSource(int numComponents, long[] rawDims, IndexedDataSource<Float32Member> numbers, MetaDataStore metadata) {
-
+	private static
+	
+		NdData<QuaternionFloat32Member>
+	
+			quaternionDataSource(int numComponents, long[] rawDims, IndexedDataSource<Float32Member> numbers, MetaDataStore metadata)
+	{
 		if (numComponents != 4 || (numbers.size() % numComponents) != 0)
 			throw new IllegalArgumentException("suspicious input to quaternion data source allocation routine");
 
@@ -540,10 +599,12 @@ public class NmrPipeReader {
 		return nd;
 	}
 	
-	private static <T extends Algebra<T,U>, U>
+	private static
+	
+		<T extends Algebra<T,U>,
+			U>
 	
 		void flipAroundY(T algebra, NdData<U> data)
-	
 	{
 		long[] dims = DataSourceUtils.dimensions(data);
 		
