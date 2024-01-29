@@ -29,6 +29,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigDecimal;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -37,6 +38,8 @@ import java.util.Arrays;
 
 import nom.bdezonia.zorbage.algebra.Algebra;
 import nom.bdezonia.zorbage.algebra.G;
+import nom.bdezonia.zorbage.coordinates.CoordinateSpace;
+import nom.bdezonia.zorbage.coordinates.LinearNdCoordinateSpace;
 import nom.bdezonia.zorbage.data.NdData;
 import nom.bdezonia.zorbage.datasource.IndexedDataSource;
 import nom.bdezonia.zorbage.metadata.MetaDataStore;
@@ -256,20 +259,6 @@ public class NmrPipeReader {
 
 			System.out.println();
 			
-			System.out.println("some metadata follows...");
-			
-			System.out.println();
-			
-			System.out.println("user name:   " + reader.userName());
-			System.out.println("oper name:   " + reader.operatorName());
-			System.out.println("source:      " + reader.sourceName());
-			System.out.println("title:       " + reader.title());
-			System.out.println("comment:     " + reader.comment());
-			System.out.println("dim 1 label: " + reader.dim1Label());
-			System.out.println("dim 2 label: " + reader.dim2Label());
-			System.out.println("dim 3 label: " + reader.dim3Label());
-			System.out.println("dim 4 label: " + reader.dim4Label());
-			
 			MetaDataStore metadata = new MetaDataStore();
 
 			metadata.putString("username", reader.userName());
@@ -277,10 +266,13 @@ public class NmrPipeReader {
 			metadata.putString("source", reader.sourceName());
 			metadata.putString("title", reader.title());
 			metadata.putString("comment", reader.comment());
-			metadata.putString("dim 1 label", reader.dim1Label());
-			metadata.putString("dim 2 label", reader.dim2Label());
-			metadata.putString("dim 3 label", reader.dim3Label());
-			metadata.putString("dim 4 label", reader.dim4Label());
+			
+			for (int i = 0; i < 4; i++) {
+				metadata.putString("dim "+i+" label", reader.dimLabel(i));
+				metadata.putString("dim "+i+" unit", reader.unit(i));
+				metadata.putFloat("dim "+i+" offset", reader.offset(i));
+				metadata.putFloat("dim "+i+" scale", reader.scale(i));
+			}
 			
 			return new Tuple5<>(dataType.a(), dataType.b(), dims, data, metadata);
 			
@@ -333,6 +325,8 @@ public class NmrPipeReader {
 
 		flipAroundY(G.FLT, nd);
 		
+		setUnitsEtc(nd);
+		
 		System.out.println();
 		
 		System.out.println("final type is real");
@@ -350,11 +344,12 @@ public class NmrPipeReader {
 	
 			complexDataSource(int numComponents, long[] rawDims, IndexedDataSource<Float32Member> numbers, MetaDataStore metadata)
 	{
-		if (numComponents != 2 || (numbers.size() % numComponents) != 0)
+		if (numComponents != 2 || (numbers.size() % 2) != 0)
 			throw new IllegalArgumentException("suspicious input to complex data source allocation routine");
 
 		IndexedDataSource<ComplexFloat32Member> complexes =
-				Storage.allocate(G.CFLT.construct(), numbers.size()/numComponents);
+				
+				Storage.allocate(G.CFLT.construct(), numbers.size() / 2);
 		
 		ComplexFloat32Member complex = G.CFLT.construct();
 		
@@ -375,47 +370,53 @@ public class NmrPipeReader {
 			//   (N four-byte Float Values for Imag Part)
 			//
 			
-			long n = 0;
-			
-			long numY = rawDims.length == 1 ? 1 : rawDims[1];  // I'm extending to 2d
-			
-			for (long y = 0; y < numY; y++) {
-
-				complex.setR(0);
-				
-				complex.setI(0);
-				
-				// read the R values
-
-				for (long k = 0; k < complexes.size(); k++) {
-					
-					numbers.get(n++, value);
-					
-					complex.setR(value);
-					
-					complexes.set(k, complex);
-				}
-		
-				// read the I values
-				
-				for (long k = 0; k < complexes.size(); k++) {
-		
-					complexes.get(k, complex);
-					
-					numbers.get(n++, value);
-					
-					complex.setI(value);
-					
-					complexes.set(k, complex);
-				}
-			}
-			
 			// adjust the dims
 			
 			if (rawDims.length == 1)
 				dims[0] /= 2;
 			else
 				dims[1] /= 2;
+
+			long n = 0;
+			
+			long numX = dims[0];
+			
+			long numY = rawDims.length == 1 ? 1 : dims[1];  // I'm extending to 2d
+			
+			System.out.println("floats = "+numbers.size());
+			
+			System.out.println("dims = "+Arrays.toString(dims));
+			
+			System.out.println("numY = "+numY);
+			
+			for (long y = 0; y < numY; y++) {
+
+				// read R values
+				
+				for (long x = 0; x < numX; x++) {
+					
+					complexes.get(y * numX + x, complex);
+					
+					numbers.get(n++, value);
+					
+					complex.setR(value);
+
+					complexes.set(y * numX + x, complex);
+				}
+				
+				// read I values
+				
+				for (long x = 0; x < numX; x++) {
+					
+					complexes.get(y * numX + x, complex);
+					
+					numbers.get(n++, value);
+					
+					complex.setI(value);
+
+					complexes.set(y * numX + x, complex);
+				}
+			}
 		}
 		else {
 			
@@ -437,6 +438,8 @@ public class NmrPipeReader {
 		
 		flipAroundY(G.CFLT, nd);
 		
+		setUnitsEtc(nd);
+		
 		System.out.println();
 		
 		System.out.println("final type is complex");
@@ -454,13 +457,12 @@ public class NmrPipeReader {
 	
 			quaternionDataSource(int numComponents, long[] rawDims, IndexedDataSource<Float32Member> numbers, MetaDataStore metadata)
 	{
-		if (numComponents != 4 || (numbers.size() % numComponents) != 0)
+		if (numComponents != 4 || (numbers.size() % 4) != 0)
 			throw new IllegalArgumentException("suspicious input to quaternion data source allocation routine");
 
-		IndexedDataSource<QuaternionFloat32Member> data = Storage.allocate(G.QFLT.construct(), numbers.size() / 4);
-
 		IndexedDataSource<QuaternionFloat32Member> quats =
-				Storage.allocate(G.QFLT.construct(), numbers.size()/numComponents);
+
+				Storage.allocate(G.QFLT.construct(), numbers.size() / 4);
 		
 		QuaternionFloat32Member quat = G.QFLT.construct();
 		
@@ -491,71 +493,6 @@ public class NmrPipeReader {
 			//   (N X-Axis=Imag Values for Y-Axis Increment M Real)
 			//   (N X-Axis=Real Values for Y-Axis Increment M Imag)
 			//   (N X-Axis=Imag Values for Y-Axis Increment M Imag)
-		
-			long n = 0;
-			
-			long numY = rawDims.length == 1 ? 1 : rawDims[1];  // I'm extending 2d to 1d
-			
-			for (long y = 0; y < numY; y++) {
-
-				quat.setR(0);
-				
-				quat.setI(0);
-
-				quat.setJ(0);
-				
-				quat.setK(0);
-				
-				// read R values
-				
-				for (long i = 0; i < rawDims[0]; i++) {
-					
-					numbers.get(n++,  value);
-					
-					quat.setR(value);
-					
-					quats.set(i, quat);
-				}
-				
-				// read I values
-				
-				for (long i = 0; i < rawDims[0]; i++) {
-	
-					quats.get(i, quat);
-					
-					numbers.get(n++,  value);
-					
-					quat.setI(value);
-					
-					quats.set(i, quat);
-				}
-				
-				// read J values
-				
-				for (long i = 0; i < rawDims[0]; i++) {
-					
-					quats.get(i, quat);
-					
-					numbers.get(n++,  value);
-					
-					quat.setJ(value);
-					
-					quats.set(i, quat);
-				}
-				
-				// read K values
-				
-				for (long i = 0; i < rawDims[0]; i++) {
-					
-					quats.get(i, quat);
-					
-					numbers.get(n++,  value);
-					
-					quat.setK(value);
-					
-					quats.set(i, quat);
-				}
-			}
 			
 			// adjust the dims
 			
@@ -563,6 +500,67 @@ public class NmrPipeReader {
 				dims[0] /= 4;
 			else
 				dims[1] /= 4;
+
+			long n = 0;
+			
+			long numX = dims[0];
+
+			long numY = rawDims.length == 1 ? 1 : dims[1];  // I'm extending 2d to 1d
+
+			for (long y = 0; y < numY; y++) {
+
+				// read R values
+				
+				for (long x = 0; x < numX; x++) {
+					
+					quats.get(y * numX + x, quat);
+					
+					numbers.get(n++, value);
+					
+					quat.setR(value);
+
+					quats.set(y * numX + x, quat);
+				}
+				
+				// read I values
+				
+				for (long x = 0; x < numX; x++) {
+					
+					quats.get(y * numX + x, quat);
+					
+					numbers.get(n++, value);
+					
+					quat.setI(value);
+
+					quats.set(y * numX + x, quat);
+				}
+				
+				// read J values
+				
+				for (long x = 0; x < numX; x++) {
+					
+					quats.get(y * numX + x, quat);
+					
+					numbers.get(n++, value);
+					
+					quat.setJ(value);
+
+					quats.set(y * numX + x, quat);
+				}
+				
+				// read K values
+				
+				for (long x = 0; x < numX; x++) {
+					
+					quats.get(y * numX + x, quat);
+					
+					numbers.get(n++, value);
+					
+					quat.setK(value);
+
+					quats.set(y * numX + x, quat);
+				}
+			}
 		}
 		else {
 			
@@ -578,17 +576,19 @@ public class NmrPipeReader {
 			throw new IllegalArgumentException("quaternion 3d or 4d case not yet implemented");
 		}
 		
-		NdData<QuaternionFloat32Member> nd = new NdData<>(dims, data);
+		NdData<QuaternionFloat32Member> nd = new NdData<>(dims, quats);
 		
 		nd.metadata().merge(metadata);
 		
 		flipAroundY(G.QFLT, nd);
 		
+		setUnitsEtc(nd);
+		
 		System.out.println();
 		
 		System.out.println("final type is quaternion");
 
-		System.out.println("final number of quats = " + data.size());
+		System.out.println("final number of quats = " + quats.size());
 		
 		System.out.println("final dims = " + Arrays.toString(dims));
 		
@@ -649,6 +649,27 @@ public class NmrPipeReader {
 		}
 	}
 
+	private static
+	
+		void setUnitsEtc(NdData<?> data)
+	
+	{
+		BigDecimal[] offsets = new BigDecimal[data.numDimensions()];
+		BigDecimal[] scales = new BigDecimal[data.numDimensions()];
+		
+		for (int i = 0; i < data.numDimensions(); i++) {
+			
+			data.setAxisType(i, data.metadata().getString("dim "+i+" label"));
+			data.setAxisUnit(i, data.metadata().getString("dim "+i+" unit"));
+			offsets[i] = BigDecimal.valueOf(data.metadata().getFloat("dim "+i+" offset"));
+			scales[i] = BigDecimal.valueOf(data.metadata().getFloat("dim "+i+" scale"));
+		}
+		
+		CoordinateSpace space = new LinearNdCoordinateSpace(scales, offsets);
+		
+		data.setCoordinateSpace(space);
+	}
+	
 	private static class NmrPipeFileReader {
 
 		private int[] vars = new int[HEADER_ENTRIES];
@@ -684,6 +705,37 @@ public class NmrPipeReader {
 				throw new IllegalArgumentException("Weird value present for FDFLTORDER");
 			
 			byteSwapNeeded =  Math.abs(headerVal - 2.345f) > 1e-6;
+			
+			System.out.println("FDSCALE "+getHeaderFloat(FDSCALE));
+			
+			System.out.println("FDF1ORIG " + getHeaderFloat(FDF1ORIG));
+			System.out.println("FDF1UNITS " + getHeaderInt(FDF1UNITS));
+			System.out.println("FDF1CENTER " + getHeaderFloat(FDF1CENTER));
+			System.out.println("FDF1OFFPPM " + getHeaderFloat(FDF1OFFPPM));
+			System.out.println("FDF1GOFF " + getHeaderFloat(FDF1GOFF));
+			
+			System.out.println("FDF2ORIG " + getHeaderFloat(FDF2ORIG));
+			System.out.println("FDF2UNITS " + getHeaderInt(FDF2UNITS));
+			System.out.println("FDF2CENTER " + getHeaderFloat(FDF2CENTER));
+			System.out.println("FDF2OFFPPM " + getHeaderFloat(FDF2OFFPPM));
+			System.out.println("FDF2GOFF " + getHeaderFloat(FDF2GOFF));
+			
+			System.out.println("FDF3ORIG " + getHeaderFloat(FDF3ORIG));
+			System.out.println("FDF3UNITS " + getHeaderInt(FDF3UNITS));
+			System.out.println("FDF3CENTER " + getHeaderFloat(FDF3CENTER));
+			System.out.println("FDF3OFFPPM " + getHeaderFloat(FDF3OFFPPM));
+			System.out.println("FDF3GOFF " + getHeaderFloat(FDF3GOFF));
+			
+			System.out.println("FDF4ORIG " + getHeaderFloat(FDF4ORIG));
+			System.out.println("FDF4UNITS " + getHeaderInt(FDF4UNITS));
+			System.out.println("FDF4CENTER " + getHeaderFloat(FDF4CENTER));
+			System.out.println("FDF4OFFPPM " + getHeaderFloat(FDF4OFFPPM));
+			System.out.println("FDF4GOFF " + getHeaderFloat(FDF4GOFF));
+			
+			System.out.println("FDF1LABEL " + intsToString(FDF1LABEL,2));
+			System.out.println("FDF2LABEL " + intsToString(FDF2LABEL,2));
+			System.out.println("FDF3LABEL " + intsToString(FDF3LABEL,2));
+			System.out.println("FDF4LABEL " + intsToString(FDF4LABEL,2));
 		}
 		
 		// maybe the header vars are never ints but always floats. the little docs I've seen
@@ -902,105 +954,135 @@ public class NmrPipeReader {
 			return intsToString(FDCOMMENT, 40);
 		}
 		
-		private String dim1Label() {
-
-			// one and two interchanged like nmrpipe code
-
-			return intsToString(FDF2LABEL, 2);  // looks backwards
-		}
-
-		private String dim2Label() {
-			
-			// one and two interchanged like nmrpipe code
-			
-			return intsToString(FDF1LABEL, 2);  // looks backwards
-		}
-
-		private String dim3Label() {
-			
-			return intsToString(FDF3LABEL, 2);
-		}
-
-		private String dim4Label() {
-			
-			return intsToString(FDF4LABEL, 2);
-		}
+		// TODO: reconcile with dimIndex: treatment of DIM1 and DIM2
 		
-		private String dimHalf0Label(int dim) {
-			
-			// one and two interchanged like nmrpipe code
-			
-			if (dim == 1)
-				return intsToString(FDF2LABEL+0, 1);  // looks backwards
-			if (dim == 2)
-				return intsToString(FDF1LABEL+0, 1);  // looks backwards
-			if (dim == 3)
-				return intsToString(FDF3LABEL+0, 1);
-			if (dim == 4)
-				return intsToString(FDF4LABEL+0, 1);
-			return "?";
-		}
-		
-		private String dimHalf1Label(int dim) {
-			
-			// one and two interchanged like nmrpipe code
-			
-			if (dim == 1)
-				return intsToString(FDF2LABEL+1, 1);  // looks backwards
-			if (dim == 2)
-				return intsToString(FDF1LABEL+1, 1);  // looks backwards
-			if (dim == 3)
-				return intsToString(FDF3LABEL+1, 1);
-			if (dim == 4)
-				return intsToString(FDF4LABEL+1, 1);
-			return "?";
-		}
-
 		private String dimLabel(int dim) {
 
 			// NOTE: one and two NOT interchanged on purpose
 			
+			if (dim == 0)
+				
+				return intsToString(FDF2LABEL, 2);  // looks backwards
+			
 			if (dim == 1)
-				return dim1Label();
+
+				return intsToString(FDF1LABEL, 2);  // looks backwards
+			
 			if (dim == 2)
-				return dim2Label();
+				
+				return intsToString(FDF3LABEL, 2);
+			
 			if (dim == 3)
-				return dim3Label();
-			if (dim == 4)
-				return dim4Label();
+			
+				return intsToString(FDF4LABEL, 2);
+			
 			return "?";
 		}
 		
-		private int firstDimIndex() {
-			
-			return vars[FDDIMORDER1];  // probably X
-		}
-		
-		private int secondDimIndex() {
-			
-			return vars[FDDIMORDER2];  // usually Y but also could be Z or A
-		}
-		
-		private int thirdDimIndex() {  // usually Z
-			
-			return vars[FDDIMORDER3];
-		}
-		
-		private int fourthDimIndex() {
-			
-			return vars[FDDIMORDER4];  // usually A
-		}
+		// TODO: reconcile with dimLabel: treatment of DIM1 and DIM2
 		
 		private int dimIndex(int dim) {
+
+			if (dim == 0)
+				
+				return vars[FDDIMORDER1];  // should this be 2 to match others? // usually X
+			
 			if (dim == 1)
-				return firstDimIndex();
+				
+				return vars[FDDIMORDER2];  // should this be 1 to match others? // usually Y
+			
 			if (dim == 2)
-				return secondDimIndex();
+				
+				return vars[FDDIMORDER3];  // usually Z
+			
 			if (dim == 3)
-				return thirdDimIndex();
-			if (dim == 4)
-				return fourthDimIndex();
+			
+				return vars[FDDIMORDER3]; // usually A
+			
 			return -1;
+		}
+		
+		private String unit(int dim) {
+			
+			int numDims = findDims().length;
+			
+			if (dim < 0 || dim >= numDims)
+
+				return "unknown";
+			
+			int val = -1;
+
+			if (dim == 0)
+				
+				val = getHeaderInt(FDF2UNITS);
+			
+			else if (dim == 1)
+				
+				val = getHeaderInt(FDF1UNITS);
+			
+			else if (dim == 2)
+				
+				val = getHeaderInt(FDF3UNITS);
+			
+			else if (dim == 3)
+				
+				val = getHeaderInt(FDF4UNITS);
+
+			// NOTE this was documented in NDUNITS blurb in header. It may not actually apply.
+			
+			if (val == 0)
+				
+				return "none?";
+			
+			else if (val == 1)
+				
+				return "seconds";
+			
+			else if (val == 2)
+				
+				return "hertz";
+			
+			else if (val == 3)
+				
+				return "ppm";
+			
+			else if (val == 4)
+				
+				return "pts";
+			
+			return "unknown";
+		}
+		
+		private float scale(int dim) {
+			
+			return 1.0f;
+		}
+		
+		private float offset(int dim) {
+
+			int numDims = findDims().length;
+			
+			if (dim < 0 || dim >= numDims)
+				
+				return 0.0f;
+			
+			if (dim == 0)
+			
+				return getHeaderFloat(FDF2ORIG); // also add OFFPPM too?
+			
+			else if (dim == 1)
+				
+				return getHeaderFloat(FDF1ORIG); // also add OFFPPM too?
+			
+			else if (dim == 2)
+				
+				return getHeaderFloat(FDF3ORIG); // also add OFFPPM too?
+			
+			else if (dim == 3)
+				
+				return getHeaderFloat(FDF4ORIG); // also add OFFPPM too?
+			
+			return 0.0f;
 		}
 		
 		// Find nrmpipe .c/.h code to verify all the formats I think exist
@@ -1008,25 +1090,26 @@ public class NmrPipeReader {
 	    final int FDMAGIC = 0;
 	    final int FDFLTFORMAT = 1;
 	    final int FDFLTORDER = 2;
-	    // 3-8 = ?
+	    final int FDID = 3;
+	    // 4-8 = ?
 	    final int FDDIMCOUNT = 9;
 	    final int FDF3OBS = 10;
 	    final int FDF3SW = 11;
-	    final int FDF3ORIG = 12;
+	    final int FDF3ORIG = 12;  // NDORIG is in hz so maybe this is too
 	    final int FDF3FTFLAG = 13;
 	    final int FDPLANELOC = 14;
 	    final int FDF3SIZE = 15;
-	    final int FDF2LABEL = 16; // and 17: 8 ascii chars?
-	    final int FDF1LABEL = 18; // and 19: 8 ascii chars?
-	    final int FDF3LABEL = 20; // and 21: 8 ascii chars?
-	    final int FDF4LABEL = 22; // and 23: 8 ascii chars?
+	    final int FDF2LABEL = 16; // and 17: 8 ascii chars
+	    final int FDF1LABEL = 18; // and 19: 8 ascii chars
+	    final int FDF3LABEL = 20; // and 21: 8 ascii chars
+	    final int FDF4LABEL = 22; // and 23: 8 ascii chars
 	    final int FDDIMORDER1 = 24;
 	    final int FDDIMORDER2 = 25;
 	    final int FDDIMORDER3 = 26;
 	    final int FDDIMORDER4 = 27;
 	    final int FDF4OBS = 28;
 	    final int FDF4SW = 29;
-	    final int FDF4ORIG = 30;
+	    final int FDF4ORIG = 30;  // NDORIG is in hz so maybe this is too
 	    final int FDF4FTFLAG = 31;
 	    final int FDF4SIZE = 32;
 	    // 33-39 = ?
@@ -1076,7 +1159,7 @@ public class NmrPipeReader {
 	    final int FDF1FTSIZE = 98;
 	    final int FDSIZE = 99;
 	    final int FDF2SW = 100;
-	    final int FDF2ORIG = 101;
+	    final int FDF2ORIG = 101;  // NDORIG is in hz so maybe this is too
 	    // 102-105 = ?
 	    final int FDQUADFLAG = 106;
 	    // 107 = ?
@@ -1116,7 +1199,7 @@ public class NmrPipeReader {
 	    final int FDF1P1 = 246;
 	    final int FDMAX = 247;
 	    final int FDMIN = 248;
-	    final int FDF1ORIG = 249;
+	    final int FDF1ORIG = 249;  // NDORIG is in hz so maybe this is too
 	    final int FDSCALEFLAG = 250;
 	    final int FDDISPMAX = 251;
 	    final int FDDISPMIN = 252;
@@ -1139,13 +1222,13 @@ public class NmrPipeReader {
 	    final int FDHOURS = 283;
 	    final int FDMINS = 284;
 	    final int FDSECS = 285;
-	    final int FDSRCNAME = 286; // and 287 and 288 and 289: 16 ascii chars?
-	    final int FDUSERNAME = 290; // and 291 and 292 and 293: 16 ascii chars?
+	    final int FDSRCNAME = 286; // and 287 and 288 and 289: 16 ascii chars
+	    final int FDUSERNAME = 290; // and 291 and 292 and 293: 16 ascii chars
 	    final int FDMONTH = 294;
 	    final int FDDAY = 295;
 	    final int FDYEAR = 296;
-	    final int FDTITLE = 297;  // through 311: 60 ascii chars?
-	    final int FDCOMMENT = 312; // through 351: 160 ascii chars?
+	    final int FDTITLE = 297;  // through 311: 60 ascii chars
+	    final int FDCOMMENT = 312; // through 351: 160 ascii chars
 	    // 352-358 = ?
 	    final int FDLASTBLOCK = 359;
 	    final int FDCONTBLOCK = 360;
@@ -1212,13 +1295,14 @@ public class NmrPipeReader {
 	    final int FDSLICECOUNT1 = 446;
 	    final int FDCUBEFLAG = 447;
 	    // 448-463 = ?
-	    final int FDOPERNAME = 464; // through 471: 32 ascii chars?
+	    final int FDOPERNAME = 464; // through 471: 32 ascii chars
 	    // 472-474 = ?
 	    final int FDF1AQSIGN = 475;
 	    final int FDF3AQSIGN = 476;
 	    final int FDF4AQSIGN = 477;
-	    // 478-479 = ?
-	    final int FDF2OFFPPM = 480;
+	    final int FDSCALE = 478;
+	    // 479 = ?
+	    final int FDF2OFFPPM = 480;  // NDOFFPPM says this: "Additional PPM offset (for alignment)."
 	    final int FDF1OFFPPM = 481;
 	    final int FDF3OFFPPM = 482;
 	    final int FDF4OFFPPM = 483;
