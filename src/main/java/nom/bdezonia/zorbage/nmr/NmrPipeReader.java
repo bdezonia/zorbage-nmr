@@ -953,78 +953,81 @@ public class NmrPipeReader {
 			
 			return intsToString(FDCOMMENT, 40);
 		}
-		
-		// TODO: reconcile with dimIndex: treatment of DIM1 and DIM2
-		
-		private String dimLabel(int dim) {
 
-			// NOTE: one and two NOT interchanged on purpose
+		private int dimIndex(int dimNumber) {
 			
-			if (dim == 0)
+			if (dimNumber < 0 || dimNumber > 3)
 				
-				return intsToString(FDF2LABEL, 2);  // looks backwards
-			
-			if (dim == 1)
+				throw new IllegalArgumentException("DIM NUMBER IS OUT OF BOUNDS "+dimNumber);
 
-				return intsToString(FDF1LABEL, 2);  // looks backwards
+			// needed to read as floats and cast as ints. this must be an ancient way
+			//   to get ints from the header.
 			
-			if (dim == 2)
+			if (dimNumber == 0)
 				
+				return (int) getHeaderFloat(FDDIMORDER1);
+						
+			else if (dimNumber == 1)
+				
+				return (int) getHeaderFloat(FDDIMORDER2);
+
+			else if (dimNumber == 2)
+				
+				return (int) getHeaderFloat(FDDIMORDER3);
+
+			else // (dimNumber == 3)
+				
+				return (int) getHeaderFloat(FDDIMORDER4);
+		}
+		
+		private String dimLabel(int dimNumber) {
+
+			int dimIndex = dimIndex(dimNumber);
+			
+			if (dimIndex == 1)
+
+				return intsToString(FDF1LABEL, 2);
+			
+			if (dimIndex == 2)
+
+				return intsToString(FDF2LABEL, 2);
+			
+			if (dimIndex == 3)
+
 				return intsToString(FDF3LABEL, 2);
 			
-			if (dim == 3)
-			
+			if (dimIndex == 4)
+
 				return intsToString(FDF4LABEL, 2);
 			
 			return "?";
 		}
 		
-		// TODO: reconcile with dimLabel: treatment of DIM1 and DIM2
-		
-		private int dimIndex(int dim) {
-
-			if (dim == 0)
-				
-				return vars[FDDIMORDER1];  // should this be 2 to match others? // usually X
-			
-			if (dim == 1)
-				
-				return vars[FDDIMORDER2];  // should this be 1 to match others? // usually Y
-			
-			if (dim == 2)
-				
-				return vars[FDDIMORDER3];  // usually Z
-			
-			if (dim == 3)
-			
-				return vars[FDDIMORDER3]; // usually A
-			
-			return -1;
-		}
-		
-		private String unit(int dim) {
+		private String unit(int dimNumber) {
 			
 			int numDims = findDims().length;
 			
-			if (dim < 0 || dim >= numDims)
+			if (dimNumber < 0 || dimNumber >= numDims)
 
 				return "unknown";
 			
+			int dimIndex = dimIndex(dimNumber);
+
 			int val = -1;
 
-			if (dim == 0)
-				
-				val = getHeaderInt(FDF2UNITS);
-			
-			else if (dim == 1)
+			if (dimIndex == 1)
 				
 				val = getHeaderInt(FDF1UNITS);
 			
-			else if (dim == 2)
+			else if (dimIndex == 2)
+				
+				val = getHeaderInt(FDF2UNITS);
+			
+			else if (dimIndex == 3)
 				
 				val = getHeaderInt(FDF3UNITS);
 			
-			else if (dim == 3)
+			else if (dimIndex == 4)
 				
 				val = getHeaderInt(FDF4UNITS);
 
@@ -1053,32 +1056,34 @@ public class NmrPipeReader {
 			return "unknown";
 		}
 		
-		private float scale(int dim) {
+		private float scale(int dimNumber) {
 			
 			return 1.0f;
 		}
 		
-		private float offset(int dim) {
+		private float offset(int dimNumber) {
 
 			int numDims = findDims().length;
 			
-			if (dim < 0 || dim >= numDims)
+			if (dimNumber < 0 || dimNumber >= numDims)
 				
 				return 0.0f;
 			
-			if (dim == 0)
+			int dimIndex = dimIndex(dimNumber);
 			
-				return getHeaderFloat(FDF2ORIG); // also add OFFPPM too?
+			if (dimIndex == 1)
 			
-			else if (dim == 1)
-				
 				return getHeaderFloat(FDF1ORIG); // also add OFFPPM too?
 			
-			else if (dim == 2)
+			else if (dimIndex == 2)
+				
+				return getHeaderFloat(FDF2ORIG); // also add OFFPPM too?
+			
+			else if (dimIndex == 3)
 				
 				return getHeaderFloat(FDF3ORIG); // also add OFFPPM too?
 			
-			else if (dim == 3)
+			else if (dimIndex == 4)
 				
 				return getHeaderFloat(FDF4ORIG); // also add OFFPPM too?
 			
