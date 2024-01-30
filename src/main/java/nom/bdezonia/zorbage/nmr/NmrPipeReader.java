@@ -54,7 +54,6 @@ import nom.bdezonia.zorbage.type.real.float32.Float32Member;
  * @author Barry DeZonia
  *
  */
-@SuppressWarnings("unused")
 public class NmrPipeReader {
 
 	private static int HEADER_ENTRIES = 512;   // 512 floats
@@ -695,7 +694,7 @@ public class NmrPipeReader {
 	 * @author bdezonia
 	 *
 	 */
-	private static class NmrPipeFileReader {
+	public static class NmrPipeFileReader {
 
 		private int[] vars = new int[HEADER_ENTRIES];
 		
@@ -735,37 +734,6 @@ public class NmrPipeReader {
 				throw new IllegalArgumentException("Weird value present for FDFLTORDER");
 			
 			byteSwapNeeded =  Math.abs(headerVal - 2.345f) > 1e-6;
-			
-			System.out.println("FDSCALE "+getHeaderFloat(FDSCALE));
-			
-			System.out.println("FDF1ORIG " + getHeaderFloat(FDF1ORIG));
-			System.out.println("FDF1UNITS " + getHeaderInt(FDF1UNITS));
-			System.out.println("FDF1CENTER " + getHeaderFloat(FDF1CENTER));
-			System.out.println("FDF1OFFPPM " + getHeaderFloat(FDF1OFFPPM));
-			System.out.println("FDF1GOFF " + getHeaderFloat(FDF1GOFF));
-			
-			System.out.println("FDF2ORIG " + getHeaderFloat(FDF2ORIG));
-			System.out.println("FDF2UNITS " + getHeaderInt(FDF2UNITS));
-			System.out.println("FDF2CENTER " + getHeaderFloat(FDF2CENTER));
-			System.out.println("FDF2OFFPPM " + getHeaderFloat(FDF2OFFPPM));
-			System.out.println("FDF2GOFF " + getHeaderFloat(FDF2GOFF));
-			
-			System.out.println("FDF3ORIG " + getHeaderFloat(FDF3ORIG));
-			System.out.println("FDF3UNITS " + getHeaderInt(FDF3UNITS));
-			System.out.println("FDF3CENTER " + getHeaderFloat(FDF3CENTER));
-			System.out.println("FDF3OFFPPM " + getHeaderFloat(FDF3OFFPPM));
-			System.out.println("FDF3GOFF " + getHeaderFloat(FDF3GOFF));
-			
-			System.out.println("FDF4ORIG " + getHeaderFloat(FDF4ORIG));
-			System.out.println("FDF4UNITS " + getHeaderInt(FDF4UNITS));
-			System.out.println("FDF4CENTER " + getHeaderFloat(FDF4CENTER));
-			System.out.println("FDF4OFFPPM " + getHeaderFloat(FDF4OFFPPM));
-			System.out.println("FDF4GOFF " + getHeaderFloat(FDF4GOFF));
-			
-			System.out.println("FDF1LABEL " + intsToString(FDF1LABEL,2));
-			System.out.println("FDF2LABEL " + intsToString(FDF2LABEL,2));
-			System.out.println("FDF3LABEL " + intsToString(FDF3LABEL,2));
-			System.out.println("FDF4LABEL " + intsToString(FDF4LABEL,2));
 		}
 		
 		/**
@@ -992,11 +960,43 @@ public class NmrPipeReader {
 			}
 			return b.toString();
 		}
+
+		/**
+		 * 
+		 */
+		int fileCount() {
+			
+			return getHeaderInt(FDFILECOUNT);
+		}
 		
 		/**
 		 * 
 		 */
-		private String sourceName() {
+		int slice0Count() {
+			
+			return getHeaderInt(FDSLICECOUNT0);
+		}
+		
+		/**
+		 * 
+		 */
+		int slice1Count() {
+			
+			return getHeaderInt(FDSLICECOUNT1);
+		}
+		
+		/**
+		 * 
+		 */
+		int cubeFlag() {
+			
+			return getHeaderInt(FDCUBEFLAG);
+		}
+
+		/**
+		 * 
+		 */
+		String sourceName() {
 			
 			return intsToString(FDSRCNAME, 4);
 		}
@@ -1004,7 +1004,7 @@ public class NmrPipeReader {
 		/**
 		 * 
 		 */
-		private String userName() {
+		String userName() {
 
 			return intsToString(FDUSERNAME, 4);
 		}
@@ -1012,7 +1012,7 @@ public class NmrPipeReader {
 		/**
 		 * 
 		 */
-		private String operatorName() {
+		String operatorName() {
 			
 			return intsToString(FDOPERNAME, 8);
 		}
@@ -1020,7 +1020,7 @@ public class NmrPipeReader {
 		/**
 		 * 
 		 */
-		private String title() {
+		String title() {
 			
 			return intsToString(FDTITLE, 15);
 		}
@@ -1028,9 +1028,108 @@ public class NmrPipeReader {
 		/**
 		 * 
 		 */
-		private String comment() {
+		String comment() {
 			
 			return intsToString(FDCOMMENT, 40);
+		}
+		
+		/**
+		 * 
+		 * @return
+		 */
+		int floatFormat() {
+			
+			return getHeaderInt(FDFLTFORMAT);
+		}
+		
+		/**
+		 * 
+		 * @return
+		 */
+		int floatOrder() {
+			
+			return getHeaderInt(FDFLTORDER);
+		}
+		
+		/**
+		 * 
+		 * @return
+		 */
+		int id() {
+			
+			return getHeaderInt(FDID);
+		}
+		
+		/**
+		 * 
+		 * @return
+		 */
+		int planeLoc() {
+			
+			return getHeaderInt(FDPLANELOC);
+		}
+
+		/**
+		 * 
+		 * @return
+		 */
+		float apodizationDDF() { // should this be an int?
+			
+			return getHeaderFloat(FDF2APODDF);
+		}
+		
+		/**
+		 * 
+		 * @return
+		 */
+		int creationYear() {
+			
+			return getHeaderInt(FDYEAR);
+		}
+		
+		/**
+		 * 
+		 * @return
+		 */
+		int creationMonth() {
+			
+			return getHeaderInt(FDMONTH);
+		}
+		
+		/**
+		 * 
+		 * @return
+		 */
+		int creationDay() {
+			
+			return getHeaderInt(FDDAY);
+		}
+		
+		/**
+		 * 
+		 * @return
+		 */
+		int creationHour() {
+			
+			return getHeaderInt(FDHOURS);
+		}
+		
+		/**
+		 * 
+		 * @return
+		 */
+		int creationMinute() {
+			
+			return getHeaderInt(FDMINS);
+		}
+		
+		/**
+		 * 
+		 * @return
+		 */
+		int creationSecond() {
+			
+			return getHeaderInt(FDSECS);
 		}
 
 		/**
@@ -1069,7 +1168,7 @@ public class NmrPipeReader {
 		 * @param dimNumber
 		 * @return
 		 */
-		private String dimLabel(int dimNumber) {
+		String dimLabel(int dimNumber) {
 
 			int dimIndex = dimIndex(dimNumber);
 			
@@ -1091,7 +1190,7 @@ public class NmrPipeReader {
 			
 			else
 				
-				return "?";
+				return "unknown";
 		}
 		
 		/**
@@ -1099,7 +1198,7 @@ public class NmrPipeReader {
 		 * @param dimNumber
 		 * @return
 		 */
-		private String unit(int dimNumber) {
+		String unit(int dimNumber) {
 			
 			int dimIndex = dimIndex(dimNumber);
 
@@ -1123,7 +1222,7 @@ public class NmrPipeReader {
 			
 			else
 				
-				return "unknown";
+				return "illegal dimIndex";
 
 			// NOTE this was documented in NDUNITS blurb in header. It may not actually apply.
 			
@@ -1157,7 +1256,7 @@ public class NmrPipeReader {
 		 * @param dimNumber
 		 * @return
 		 */
-		private float offset(int dimNumber) {
+		float offset(int dimNumber) {
 
 			int dimIndex = dimIndex(dimNumber);
 			
@@ -1179,7 +1278,7 @@ public class NmrPipeReader {
 			
 			else
 				
-				return 0;
+				return Float.NaN;
 		}
 		
 		/**
@@ -1187,7 +1286,7 @@ public class NmrPipeReader {
 		 * @param dimNumber
 		 * @return Sweep width in Hz
 		 */
-		private float sweepWidth(int dimNumber) {
+		float sweepWidth(int dimNumber) {
 
 			int dimIndex = dimIndex(dimNumber);
 			
@@ -1209,7 +1308,7 @@ public class NmrPipeReader {
 			
 			else
 				
-				return 0;
+				return Float.NaN;
 		}
 		
 		/**
@@ -1217,7 +1316,7 @@ public class NmrPipeReader {
 		 * @param dimNumber
 		 * @return
 		 */
-		private float obsFreq(int dimNumber) {
+		float obsFreq(int dimNumber) {
 
 			int dimIndex = dimIndex(dimNumber);
 			
@@ -1239,9 +1338,729 @@ public class NmrPipeReader {
 			
 			else
 				
-				return 0;
+				return Float.NaN;
+		}
+
+		/**
+		 * 
+		 * @param dimNumber
+		 * @return
+		 */
+		float offPPM(int dimNumber) {
+
+			int dimIndex = dimIndex(dimNumber);
+			
+			if (dimIndex == 1)
+
+				return getHeaderFloat(FDF1OFFPPM);
+			
+			else if (dimIndex == 2)
+
+				return getHeaderFloat(FDF2OFFPPM);
+			
+			else if (dimIndex == 3)
+
+				return getHeaderFloat(FDF3OFFPPM);
+			
+			else if (dimIndex == 4)
+
+				return getHeaderFloat(FDF4OFFPPM);
+			
+			else
+				
+				return Float.NaN;
+		}
+
+		/**
+		 * 
+		 * @param dimNumber
+		 * @return
+		 */
+		float ftFlag(int dimNumber) {
+
+			int dimIndex = dimIndex(dimNumber);
+			
+			if (dimIndex == 1)
+
+				return getHeaderFloat(FDF1FTFLAG);
+			
+			else if (dimIndex == 2)
+
+				return getHeaderFloat(FDF2FTFLAG);
+			
+			else if (dimIndex == 3)
+
+				return getHeaderFloat(FDF3FTFLAG);
+			
+			else if (dimIndex == 4)
+
+				return getHeaderFloat(FDF4FTFLAG);
+			
+			else
+				
+				return Float.NaN;
+		}
+
+		/**
+		 * 
+		 * @param dimNumber
+		 * @return
+		 */
+		float ftSize(int dimNumber) {  // TODO: is this an int instead of a float?
+
+			int dimIndex = dimIndex(dimNumber);
+			
+			if (dimIndex == 1)
+
+				return getHeaderFloat(FDF1FTSIZE);
+			
+			else if (dimIndex == 2)
+
+				return getHeaderFloat(FDF2FTSIZE);
+			
+			else if (dimIndex == 3)
+
+				return getHeaderFloat(FDF3FTSIZE);
+			
+			else if (dimIndex == 4)
+
+				return getHeaderFloat(FDF4FTSIZE);
+			
+			else
+				
+				return Float.NaN;
+		}
+
+		/**
+		 * 
+		 * @param dimNumber
+		 * @return
+		 */
+		float tdSize(int dimNumber) {  // TODO: is this an int instead of a float?
+
+			int dimIndex = dimIndex(dimNumber);
+			
+			if (dimIndex == 1)
+
+				return getHeaderFloat(FDF1TDSIZE);
+			
+			else if (dimIndex == 2)
+
+				return getHeaderFloat(FDF2TDSIZE);
+			
+			else if (dimIndex == 3)
+
+				return getHeaderFloat(FDF3TDSIZE);
+			
+			else if (dimIndex == 4)
+
+				return getHeaderFloat(FDF4TDSIZE);
+			
+			else
+				
+				return Float.NaN;
+		}
+
+		/**
+		 * 
+		 * @param dimNumber
+		 * @return
+		 */
+		float gaussianOffset(int dimNumber) {
+
+			int dimIndex = dimIndex(dimNumber);
+			
+			if (dimIndex == 1)
+
+				return getHeaderFloat(FDF1GOFF);
+			
+			else if (dimIndex == 2)
+
+				return getHeaderFloat(FDF2GOFF);
+			
+			else if (dimIndex == 3)
+
+				return getHeaderFloat(FDF3GOFF);
+			
+			else if (dimIndex == 4)
+
+				return getHeaderFloat(FDF4GOFF);
+			
+			else
+				
+				return Float.NaN;
+		}
+
+		/**
+		 * 
+		 * @param dimNumber
+		 * @return
+		 */
+		float origObsFreq(int dimNumber) {
+
+			int dimIndex = dimIndex(dimNumber);
+			
+			if (dimIndex == 1)
+
+				return getHeaderFloat(FDF1OBSMID);
+			
+			else if (dimIndex == 2)
+
+				return getHeaderFloat(FDF2OBSMID);
+			
+			else if (dimIndex == 3)
+
+				return getHeaderFloat(FDF3OBSMID);
+			
+			else if (dimIndex == 4)
+
+				return getHeaderFloat(FDF4OBSMID);
+			
+			else
+				
+				return Float.NaN;
+		}
+
+		/**
+		 * 
+		 * @param dimNumber
+		 * @return
+		 */
+		float extraExpBroadening(int dimNumber) {
+
+			int dimIndex = dimIndex(dimNumber);
+			
+			if (dimIndex == 1)
+
+				return getHeaderFloat(FDF1LB);
+			
+			else if (dimIndex == 2)
+
+				return getHeaderFloat(FDF2LB);
+			
+			else if (dimIndex == 3)
+
+				return getHeaderFloat(FDF3LB);
+			
+			else if (dimIndex == 4)
+
+				return getHeaderFloat(FDF4LB);
+			
+			else
+				
+				return Float.NaN;
+		}
+
+		/**
+		 * 
+		 * @param dimNumber
+		 * @return
+		 */
+		float extraGaussBroadening(int dimNumber) {
+
+			int dimIndex = dimIndex(dimNumber);
+			
+			if (dimIndex == 1)
+
+				return getHeaderFloat(FDF1GB);
+			
+			else if (dimIndex == 2)
+
+				return getHeaderFloat(FDF2GB);
+			
+			else if (dimIndex == 3)
+
+				return getHeaderFloat(FDF3GB);
+			
+			else if (dimIndex == 4)
+
+				return getHeaderFloat(FDF4GB);
+			
+			else
+				
+				return Float.NaN;
+		}
+
+		/**
+		 * 
+		 * @param dimNumber
+		 * @return
+		 */
+		float negOfZeroFillSize(int dimNumber) {  // TODO: is this an INT instead of a FLOAT?
+
+			int dimIndex = dimIndex(dimNumber);
+			
+			if (dimIndex == 1)
+
+				return getHeaderFloat(FDF1ZF);
+			
+			else if (dimIndex == 2)
+
+				return getHeaderFloat(FDF2ZF);
+			
+			else if (dimIndex == 3)
+
+				return getHeaderFloat(FDF3ZF);
+			
+			else if (dimIndex == 4)
+
+				return getHeaderFloat(FDF4ZF);
+			
+			else
+				
+				return Float.NaN;
+		}
+
+		/**
+		 * 
+		 * @param dimNumber
+		 * @return
+		 */
+		int apodization(int dimNumber) {  // TODO: should this be a float
+
+			int dimIndex = dimIndex(dimNumber);
+			
+			if (dimIndex == 1)
+
+				return getHeaderInt(FDF1APOD);
+			
+			else if (dimIndex == 2)
+
+				return getHeaderInt(FDF2APOD);
+			
+			else if (dimIndex == 3)
+
+				return getHeaderInt(FDF3APOD);
+			
+			else if (dimIndex == 4)
+
+				return getHeaderInt(FDF4APOD);
+			
+			else
+				
+				return Integer.MIN_VALUE;
+		}
+
+		/**
+		 * 
+		 * @param dimNumber
+		 * @return
+		 */
+		int apodizationCode(int dimNumber) {
+
+			int dimIndex = dimIndex(dimNumber);
+			
+			if (dimIndex == 1)
+
+				return getHeaderInt(FDF1APODCODE);
+			
+			else if (dimIndex == 2)
+
+				return getHeaderInt(FDF2APODCODE);
+			
+			else if (dimIndex == 3)
+
+				return getHeaderInt(FDF3APODCODE);
+			
+			else if (dimIndex == 4)
+
+				return getHeaderInt(FDF4APODCODE);
+			
+			else
+				
+				return Integer.MIN_VALUE;
+		}
+
+		/**
+		 * 
+		 * @param dimNumber
+		 * @return
+		 */
+		float apodizationParam1(int dimNumber) {
+
+			int dimIndex = dimIndex(dimNumber);
+			
+			if (dimIndex == 1)
+
+				return getHeaderFloat(FDF1APODQ1);
+			
+			else if (dimIndex == 2)
+
+				return getHeaderFloat(FDF2APODQ1);
+			
+			else if (dimIndex == 3)
+
+				return getHeaderFloat(FDF3APODQ1);
+			
+			else if (dimIndex == 4)
+
+				return getHeaderFloat(FDF4APODQ1);
+			
+			else
+				
+				return Float.NaN;
+		}
+
+		/**
+		 * 
+		 * @param dimNumber
+		 * @return
+		 */
+		float apodizationParam2(int dimNumber) {
+
+			int dimIndex = dimIndex(dimNumber);
+			
+			if (dimIndex == 1)
+
+				return getHeaderFloat(FDF1APODQ2);
+			
+			else if (dimIndex == 2)
+
+				return getHeaderFloat(FDF2APODQ2);
+			
+			else if (dimIndex == 3)
+
+				return getHeaderFloat(FDF3APODQ2);
+			
+			else if (dimIndex == 4)
+
+				return getHeaderFloat(FDF4APODQ2);
+			
+			else
+				
+				return Float.NaN;
+		}
+
+		/**
+		 * 
+		 * @param dimNumber
+		 * @return
+		 */
+		float apodizationParam3(int dimNumber) {
+
+			int dimIndex = dimIndex(dimNumber);
+			
+			if (dimIndex == 1)
+
+				return getHeaderFloat(FDF1APODQ3);
+			
+			else if (dimIndex == 2)
+
+				return getHeaderFloat(FDF2APODQ3);
+			
+			else if (dimIndex == 3)
+
+				return getHeaderFloat(FDF3APODQ3);
+			
+			else if (dimIndex == 4)
+
+				return getHeaderFloat(FDF4APODQ3);
+			
+			else
+				
+				return Float.NaN;
 		}
 		
+		/**
+		 * 
+		 * @param dimNumber
+		 * @return
+		 */
+		float zeroFreqLocation(int dimNumber) {
+
+			int dimIndex = dimIndex(dimNumber);
+			
+			if (dimIndex == 1)
+
+				return getHeaderFloat(FDF1CENTER);
+			
+			else if (dimIndex == 2)
+
+				return getHeaderFloat(FDF2CENTER);
+			
+			else if (dimIndex == 3)
+
+				return getHeaderFloat(FDF3CENTER);
+			
+			else if (dimIndex == 4)
+
+				return getHeaderFloat(FDF4CENTER);
+			
+			else
+				
+				return Float.NaN;
+		}
+
+		/**
+		 * 
+		 * @param dimNumber
+		 * @return
+		 */
+		float carrierPositionPPM(int dimNumber) {
+
+			int dimIndex = dimIndex(dimNumber);
+			
+			if (dimIndex == 1)
+
+				return getHeaderFloat(FDF1CAR);
+			
+			else if (dimIndex == 2)
+
+				return getHeaderFloat(FDF2CAR);
+			
+			else if (dimIndex == 3)
+
+				return getHeaderFloat(FDF3CAR);
+			
+			else if (dimIndex == 4)
+
+				return getHeaderFloat(FDF4CAR);
+			
+			else
+				
+				return Float.NaN;
+		}
+
+		/**
+		 * 
+		 * @param dimNumber
+		 * @return
+		 */
+		float zeroOrderPhase(int dimNumber) {
+
+			int dimIndex = dimIndex(dimNumber);
+			
+			if (dimIndex == 1)
+
+				return getHeaderFloat(FDF1P0);
+			
+			else if (dimIndex == 2)
+
+				return getHeaderFloat(FDF2P0);
+			
+			else if (dimIndex == 3)
+
+				return getHeaderFloat(FDF3P0);
+			
+			else if (dimIndex == 4)
+
+				return getHeaderFloat(FDF4P0);
+			
+			else
+				
+				return Float.NaN;
+		}
+
+		/**
+		 * 
+		 * @param dimNumber
+		 * @return
+		 */
+		float firstOrderPhase(int dimNumber) {
+
+			int dimIndex = dimIndex(dimNumber);
+			
+			if (dimIndex == 1)
+
+				return getHeaderFloat(FDF1P1);
+			
+			else if (dimIndex == 2)
+
+				return getHeaderFloat(FDF2P1);
+			
+			else if (dimIndex == 3)
+
+				return getHeaderFloat(FDF3P1);
+			
+			else if (dimIndex == 4)
+
+				return getHeaderFloat(FDF4P1);
+			
+			else
+				
+				return Float.NaN;
+		}
+
+		/**
+		 * 
+		 * @param dimNumber
+		 * @return
+		 */
+		int dataTypeCode(int dimNumber) {
+
+			int dimIndex = dimIndex(dimNumber);
+			
+			if (dimIndex == 1)
+
+				return getHeaderInt(FDF1QUADFLAG);
+			
+			else if (dimIndex == 2)
+
+				return getHeaderInt(FDF2QUADFLAG);
+			
+			else if (dimIndex == 3)
+
+				return getHeaderInt(FDF3QUADFLAG);
+			
+			else if (dimIndex == 4)
+
+				return getHeaderInt(FDF4QUADFLAG);
+			
+			else
+				
+				return Integer.MIN_VALUE;
+		}
+
+		/**
+		 * 
+		 * @param dimNumber
+		 * @return
+		 */
+		int domain(int dimNumber) {  // freq domain = 1 and time domain = 0
+
+			int dimIndex = dimIndex(dimNumber);
+			
+			if (dimIndex == 1)
+
+				return getHeaderInt(FDF1FTFLAG);
+			
+			else if (dimIndex == 2)
+
+				return getHeaderInt(FDF2FTFLAG);
+			
+			else if (dimIndex == 3)
+
+				return getHeaderInt(FDF3FTFLAG);
+			
+			else if (dimIndex == 4)
+
+				return getHeaderInt(FDF4FTFLAG);
+			
+			else
+				
+				return Integer.MIN_VALUE;
+		}
+
+		/**
+		 * 
+		 * @param dimNumber
+		 * @return
+		 */
+		float x1(int dimNumber) {
+
+			int dimIndex = dimIndex(dimNumber);
+			
+			if (dimIndex == 1)
+
+				return getHeaderFloat(FDF1X1);
+			
+			else if (dimIndex == 2)
+
+				return getHeaderFloat(FDF2X1);
+			
+			else if (dimIndex == 3)
+
+				return getHeaderFloat(FDF3X1);
+			
+			else if (dimIndex == 4)
+
+				return getHeaderFloat(FDF4X1);
+			
+			else
+				
+				return Float.NaN;
+		}
+
+		/**
+		 * 
+		 * @param dimNumber
+		 * @return
+		 */
+		float xN(int dimNumber) {
+
+			int dimIndex = dimIndex(dimNumber);
+			
+			if (dimIndex == 1)
+
+				return getHeaderFloat(FDF1XN);
+			
+			else if (dimIndex == 2)
+
+				return getHeaderFloat(FDF2XN);
+			
+			else if (dimIndex == 3)
+
+				return getHeaderFloat(FDF3XN);
+			
+			else if (dimIndex == 4)
+
+				return getHeaderFloat(FDF4XN);
+			
+			else
+				
+				return Float.NaN;
+		}
+
+		/**
+		 * 
+		 * @param dimNumber
+		 * @return
+		 */
+		float aqSign(int dimNumber) {  // TODO: should this be an int?
+
+			int dimIndex = dimIndex(dimNumber);
+			
+			if (dimIndex == 1)
+
+				return getHeaderFloat(FDF1AQSIGN);
+			
+			else if (dimIndex == 2)
+
+				return getHeaderFloat(FDF2AQSIGN);
+			
+			else if (dimIndex == 3)
+
+				return getHeaderFloat(FDF3AQSIGN);
+			
+			else if (dimIndex == 4)
+
+				return getHeaderFloat(FDF4AQSIGN);
+			
+			else
+				
+				return Float.NaN;
+		}
+
+		/**
+		 * 
+		 * @param dimNumber
+		 * @return
+		 */
+		float c1(int dimNumber) {  // TODO: should this be an int?
+
+			int dimIndex = dimIndex(dimNumber);
+			
+			if (dimIndex == 1)
+
+				return getHeaderFloat(FDF1C1);
+			
+			else if (dimIndex == 2)
+
+				return getHeaderFloat(FDF2C1);
+			
+			else if (dimIndex == 3)
+
+				return getHeaderFloat(FDF3C1);
+			
+			else if (dimIndex == 4)
+
+				return getHeaderFloat(FDF4C1);
+			
+			else
+				
+				return Float.NaN;
+		}
+
 		// Find nrmpipe .c/.h code to verify all the formats I think exist
 		
 	    final int FDMAGIC = 0;
