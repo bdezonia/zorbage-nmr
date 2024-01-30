@@ -268,10 +268,11 @@ public class NmrPipeReader {
 			metadata.putString("comment", reader.comment());
 			
 			for (int i = 0; i < 4; i++) {
-				metadata.putString("dim "+i+" label", reader.dimLabel(i));
-				metadata.putString("dim "+i+" unit", reader.unit(i));
-				metadata.putFloat("dim "+i+" offset", reader.offset(i));
-				metadata.putFloat("dim "+i+" scale", reader.scale(i));
+				metadata.putString("dim " + i + " label",  reader.dimLabel(i));
+				metadata.putString("dim " + i + " unit",   reader.unit(i));
+				metadata.putFloat( "dim " + i + " offset", reader.offset(i));
+				metadata.putFloat( "dim " + i + " sw",     reader.sw(i));
+				metadata.putFloat( "dim " + i + " obs",    reader.obs(i));
 			}
 			
 			return new Tuple5<>(dataType.a(), dataType.b(), dims, data, metadata);
@@ -662,7 +663,7 @@ public class NmrPipeReader {
 			data.setAxisType(i, data.metadata().getString("dim "+i+" label"));
 			data.setAxisUnit(i, data.metadata().getString("dim "+i+" unit"));
 			offsets[i] = BigDecimal.valueOf(data.metadata().getFloat("dim "+i+" offset"));
-			scales[i] = BigDecimal.valueOf(data.metadata().getFloat("dim "+i+" scale"));
+			scales[i] = BigDecimal.ONE;
 		}
 		
 		CoordinateSpace space = new LinearNdCoordinateSpace(scales, offsets);
@@ -956,10 +957,6 @@ public class NmrPipeReader {
 
 		private int dimIndex(int dimNumber) {
 			
-			if (dimNumber < 0 || dimNumber > 3)
-				
-				throw new IllegalArgumentException("DIM NUMBER IS OUT OF BOUNDS "+dimNumber);
-
 			// needed to read as floats and cast as ints. this must be an ancient way
 			//   to get ints from the header.
 			
@@ -975,9 +972,13 @@ public class NmrPipeReader {
 				
 				return (int) getHeaderFloat(FDDIMORDER3);
 
-			else // (dimNumber == 3)
+			else if (dimNumber == 3)
 				
 				return (int) getHeaderFloat(FDDIMORDER4);
+			
+			else
+				
+				throw new IllegalArgumentException("DIM NUMBER IS OUT OF BOUNDS "+dimNumber);
 		}
 		
 		private String dimLabel(int dimNumber) {
@@ -988,28 +989,24 @@ public class NmrPipeReader {
 
 				return intsToString(FDF1LABEL, 2);
 			
-			if (dimIndex == 2)
+			else if (dimIndex == 2)
 
 				return intsToString(FDF2LABEL, 2);
 			
-			if (dimIndex == 3)
+			else if (dimIndex == 3)
 
 				return intsToString(FDF3LABEL, 2);
 			
-			if (dimIndex == 4)
+			else if (dimIndex == 4)
 
 				return intsToString(FDF4LABEL, 2);
 			
-			return "?";
+			else
+				
+				return "?";
 		}
 		
 		private String unit(int dimNumber) {
-			
-			int numDims = findDims().length;
-			
-			if (dimNumber < 0 || dimNumber >= numDims)
-
-				return "unknown";
 			
 			int dimIndex = dimIndex(dimNumber);
 
@@ -1030,12 +1027,16 @@ public class NmrPipeReader {
 			else if (dimIndex == 4)
 				
 				val = getHeaderInt(FDF4UNITS);
+			
+			else
+				
+				return "unknown";
 
 			// NOTE this was documented in NDUNITS blurb in header. It may not actually apply.
 			
 			if (val == 0)
 				
-				return "none?";
+				return "none";
 			
 			else if (val == 1)
 				
@@ -1053,41 +1054,84 @@ public class NmrPipeReader {
 				
 				return "pts";
 			
-			return "unknown";
-		}
-		
-		private float scale(int dimNumber) {
-			
-			return 1.0f;
+			else
+				
+				return "unknown";
 		}
 		
 		private float offset(int dimNumber) {
 
-			int numDims = findDims().length;
-			
-			if (dimNumber < 0 || dimNumber >= numDims)
-				
-				return 0.0f;
-			
 			int dimIndex = dimIndex(dimNumber);
 			
 			if (dimIndex == 1)
 			
-				return getHeaderFloat(FDF1ORIG); // also add OFFPPM too?
+				return getHeaderFloat(FDF1ORIG);
 			
 			else if (dimIndex == 2)
 				
-				return getHeaderFloat(FDF2ORIG); // also add OFFPPM too?
+				return getHeaderFloat(FDF2ORIG);
 			
 			else if (dimIndex == 3)
 				
-				return getHeaderFloat(FDF3ORIG); // also add OFFPPM too?
+				return getHeaderFloat(FDF3ORIG);
 			
 			else if (dimIndex == 4)
 				
-				return getHeaderFloat(FDF4ORIG); // also add OFFPPM too?
+				return getHeaderFloat(FDF4ORIG);
 			
-			return 0.0f;
+			else
+				
+				return 0;
+		}
+		
+		private float sw(int dimNumber) {
+
+			int dimIndex = dimIndex(dimNumber);
+			
+			if (dimIndex == 1)
+
+				return getHeaderFloat(FDF1SW);
+			
+			else if (dimIndex == 2)
+
+				return getHeaderFloat(FDF2SW);
+			
+			else if (dimIndex == 3)
+
+				return getHeaderFloat(FDF3SW);
+			
+			else if (dimIndex == 4)
+
+				return getHeaderFloat(FDF4SW);
+			
+			else
+				
+				return 0;
+		}
+		
+		private float obs(int dimNumber) {
+
+			int dimIndex = dimIndex(dimNumber);
+			
+			if (dimIndex == 1)
+
+				return getHeaderFloat(FDF1OBS);
+			
+			else if (dimIndex == 2)
+
+				return getHeaderFloat(FDF2OBS);
+			
+			else if (dimIndex == 3)
+
+				return getHeaderFloat(FDF3OBS);
+			
+			else if (dimIndex == 4)
+
+				return getHeaderFloat(FDF4OBS);
+			
+			else
+				
+				return 0;
 		}
 		
 		// Find nrmpipe .c/.h code to verify all the formats I think exist
