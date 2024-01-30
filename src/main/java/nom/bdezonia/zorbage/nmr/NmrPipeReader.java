@@ -694,7 +694,7 @@ public class NmrPipeReader {
 	 * @author bdezonia
 	 *
 	 */
-	public static class NmrPipeFileReader {
+	static class NmrPipeFileReader {
 
 		private int[] vars = new int[HEADER_ENTRIES];
 		
@@ -1102,15 +1102,6 @@ public class NmrPipeReader {
 			
 			return getHeaderFloat(FDSCALE);
 		}
-		
-		/**
-		 * 
-		 * @return
-		 */
-		int planeLoc() {
-			
-			return getHeaderInt(FDPLANELOC);
-		}
 
 		/**
 		 * 
@@ -1452,6 +1443,123 @@ public class NmrPipeReader {
 		int nusDim() {
 			
 			return getHeaderInt(FDNUSDIM);
+		}
+
+		/**
+		 * 
+		 * @return
+		 */
+		int realSize() {
+			
+			return getHeaderInt(FDREALSIZE);
+		}
+		
+		/**
+		 * 
+		 * @return
+		 */
+		int partition() {
+			
+			return getHeaderInt(FDPARTITION);
+		}
+
+		/**
+		 * 
+		 * @return
+		 */
+		float userVar1() {
+			
+			return getHeaderFloat(FDUSER1);
+		}
+
+		/**
+		 * 
+		 * @return
+		 */
+		float userVar2() {
+			
+			return getHeaderFloat(FDUSER2);
+		}
+
+		/**
+		 * 
+		 * @return
+		 */
+		float userVar3() {
+			
+			return getHeaderFloat(FDUSER3);
+		}
+
+		/**
+		 * 
+		 * @return
+		 */
+		float userVar4() {
+			
+			return getHeaderFloat(FDUSER4);
+		}
+
+		/**
+		 * 
+		 * @return
+		 */
+		float userVar5() {
+			
+			return getHeaderFloat(FDUSER5);
+		}
+
+		/**
+		 * 
+		 * @return
+		 */
+		float userVar6() {
+			
+			return getHeaderFloat(FDUSER6);
+		}
+
+		/**
+		 * 
+		 * @return
+		 */
+		int pipeFlag() {
+			
+			return getHeaderInt(FDPIPEFLAG);
+		}
+
+		/**
+		 * 
+		 * @return
+		 */
+		int pipeCount() {
+			
+			return getHeaderInt(FDPIPECOUNT);
+		}
+		
+		/**
+		 * 
+		 * @return
+		 */
+		int planeLoc() {
+			
+			return getHeaderInt(FDPLANELOC);
+		}
+
+		/**
+		 * 
+		 * @return
+		 */
+		int firstPlane() {
+		
+			return getHeaderInt(FDFIRSTPLANE);
+		}
+		
+		/**
+		 * 
+		 * @return
+		 */
+		int lastPlane() {
+			
+			return getHeaderInt(FDLASTPLANE);
 		}
 		
 	    /**
