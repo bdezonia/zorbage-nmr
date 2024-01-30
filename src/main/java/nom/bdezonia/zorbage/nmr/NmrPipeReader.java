@@ -812,7 +812,7 @@ public class NmrPipeReader {
 		 */
 		private Tuple2<String,Integer> findDataType() {
 		
-			int dimCount = (int) getHeaderFloat(FDDIMCOUNT);
+			int dimCount = dimCount();
 			
 			if (dimCount < 1 || dimCount > 4)
  				throw new IllegalArgumentException("dim count looks crazy "+dimCount);
@@ -870,7 +870,7 @@ public class NmrPipeReader {
 		 */
 		private long[] findDims() {
 			
-			int dimCount = (int) getHeaderFloat(FDDIMCOUNT);
+			int dimCount = dimCount();
 			
 			if (dimCount < 1 || dimCount > 4)
  				throw new IllegalArgumentException("dim count looks crazy "+dimCount);
@@ -907,21 +907,21 @@ public class NmrPipeReader {
 				
 				if (getHeaderFloat(FDQUADFLAG) == 0 && floatsPerRecord == 1) {
 				
-					yDim = 2 * ((long) getHeaderFloat(FDSPECNUM));
+					yDim = 2 * ((long) specNum());
 				}
 				else {
 
-					yDim = ((long) getHeaderFloat(FDSPECNUM));
+					yDim = ((long) specNum());
 				}
 				
-				if (getHeaderFloat(FDDIMCOUNT) == 3 && getHeaderFloat(FDPIPEFLAG) != 0) {
+				if (dimCount() == 3 && getHeaderFloat(FDPIPEFLAG) != 0) {
 					
 					zDim = (long) getHeaderFloat(FDF3SIZE);
 					
 					return new long[] {xDim, yDim, zDim};
 				}
 
-				if (getHeaderFloat(FDDIMCOUNT) == 4 && getHeaderFloat(FDPIPEFLAG) != 0) {
+				if (dimCount() == 4 && getHeaderFloat(FDPIPEFLAG) != 0) {
 					
 					zDim = (long) getHeaderFloat(FDF3SIZE);
 					
@@ -961,6 +961,15 @@ public class NmrPipeReader {
 			return b.toString();
 		}
 
+		
+		/**
+		 * 
+		 */
+		int dimCount() {
+			
+			return (int) getHeaderFloat(FDDIMCOUNT);
+		}
+		
 		/**
 		 * 
 		 */
@@ -991,6 +1000,22 @@ public class NmrPipeReader {
 		int cubeFlag() {
 			
 			return getHeaderInt(FDCUBEFLAG);
+		}
+		
+		/**
+		 * 
+		 */
+		int threadCount() {
+			
+			return getHeaderInt(FDTHREADCOUNT);
+		}
+		
+		/**
+		 * 
+		 */
+		int threadId() {
+			
+			return getHeaderInt(FDTHREADID);
 		}
 
 		/**
@@ -1046,9 +1071,9 @@ public class NmrPipeReader {
 		 * 
 		 * @return
 		 */
-		int floatOrder() {
+		float floatOrder() {
 			
-			return getHeaderInt(FDFLTORDER);
+			return getHeaderFloat(FDFLTORDER);
 		}
 		
 		/**
@@ -1058,6 +1083,24 @@ public class NmrPipeReader {
 		int id() {
 			
 			return getHeaderInt(FDID);
+		}
+
+		/**
+		 * 
+		 * @return
+		 */
+		int virgin() {
+			
+			return getHeaderInt(FD2DVIRGIN);
+		}
+		
+		/**
+		 * 
+		 * @return
+		 */
+		float scale() {
+			
+			return getHeaderFloat(FDSCALE);
 		}
 		
 		/**
@@ -1133,6 +1176,285 @@ public class NmrPipeReader {
 		}
 
 		/**
+		 * 
+		 * @return
+		 */
+		int lastBlock() {
+			
+			return getHeaderInt(FDLASTBLOCK);
+		}
+		
+		/**
+		 * 
+		 * @return
+		 */
+		int contBlock() {
+			
+			return getHeaderInt(FDCONTBLOCK);
+		}
+		
+		/**
+		 * 
+		 * @return
+		 */
+		int baseBlock() {
+			
+			return getHeaderInt(FDBASEBLOCK);
+		}
+
+		/**
+		 * 
+		 * @return
+		 */
+		int peakBlock() {
+			
+			return getHeaderInt(FDPEAKBLOCK);
+		}
+		
+		/**
+		 * 
+		 * @return
+		 */
+		int bmapBlock() {
+			
+			return getHeaderInt(FDBMAPBLOCK);
+		}
+
+		/**
+		 * 
+		 * @return
+		 */
+		int histBlock() {
+			
+			return getHeaderInt(FDHISTBLOCK);
+		}
+		
+		/**
+		 * 
+		 * @return
+		 */
+		int oneDBlock() {
+			
+			return getHeaderInt(FD1DBLOCK);
+		}
+
+		/**
+		 * 
+		 * @return
+		 */
+	    float fdScore() {
+	    
+	    	return getHeaderFloat(FDSCORE);
+	    }
+
+	    /**
+	     * 
+	     * @return
+	     */
+	    float fdScans() {
+	    
+	    	return getHeaderInt(FDSCANS);
+	    }
+
+	    /**
+		 * 
+		 * @return
+		 */
+		int domInfo() {  // float?
+			
+			return getHeaderInt(FDDOMINFO);
+		}
+		
+		/**
+		 * 
+		 * @return
+		 */
+		int methInfo() {  // float?
+			
+			return getHeaderInt(FDMETHINFO);
+		}
+		
+		/**
+		 * 
+		 * @return
+		 */
+		float twoDPhase() {
+			
+			return getHeaderFloat(FD2DPHASE);
+		}
+		
+		/**
+		 * 
+		 * @return
+		 */
+		float max() {
+			
+			return getHeaderFloat(FDMAX);
+		}
+		
+		/**
+		 * 
+		 * @return
+		 */
+		float min() {
+			
+			return getHeaderFloat(FDMIN);
+		}
+		
+		/**
+		 * 
+		 * @return
+		 */
+		int scaleFlag() {
+			
+			return getHeaderInt(FDSCALEFLAG);
+		}
+		
+		/**
+		 * 
+		 * @return
+		 */
+		float dispMin() {
+			
+			return getHeaderFloat(FDDISPMIN);
+		}
+		
+		/**
+		 * 
+		 * @return
+		 */
+		float dispMax() {
+			
+			return getHeaderFloat(FDDISPMAX);
+		}
+		
+		/**
+		 * 
+		 * @return
+		 */
+		float pThresh() {
+			
+			return getHeaderFloat(FDPTHRESH);
+		}
+		
+		/**
+		 * 
+		 * @return
+		 */
+		float nThresh() {
+			
+			return getHeaderFloat(FDNTHRESH);
+		}
+
+		/**
+		 * 
+		 * @return
+		 */
+		int mcFlag() {
+			
+			return getHeaderInt(FDMCFLAG);
+		}
+		
+		/**
+		 * 
+		 * @return
+		 */
+		float noise() {
+
+			return getHeaderFloat(FDNOISE);
+		}
+		
+		/**
+		 * 
+		 * @return
+		 */
+		float temperature() {
+
+			return getHeaderFloat(FDTEMPERATURE);
+		}
+		
+		/**
+		 * 
+		 * @return
+		 */
+		float pressure() {
+
+			return getHeaderFloat(FDPRESSURE);
+		}
+
+		/**
+		 * 
+		 * @return
+		 */
+		int rank() {
+			
+			return getHeaderInt(FDRANK);
+		}
+
+		/**
+		 * 
+		 * @return
+		 */
+		int transposed() {
+			
+			return getHeaderInt(FDTRANSPOSED);
+		}
+
+		/**
+		 * 
+		 * @return
+		 */
+		int tau() {
+			
+			return getHeaderInt(FDTAU);
+		}
+
+		/**
+		 * 
+		 * @return
+		 */
+		float specNum() {
+			
+			return getHeaderFloat(FDSPECNUM);
+		}
+
+		/**
+		 * 
+		 * @return
+		 */
+		float dmxVal() {
+			
+			return getHeaderFloat(FDDMXVAL);
+		}
+
+		/**
+		 * 
+		 * @return
+		 */
+		int dmxFlag() {
+			
+			return getHeaderInt(FDDMXFLAG);
+		}
+
+		/**
+		 * 
+		 * @return
+		 */
+		float deltaTR() {
+			
+			return getHeaderFloat(FDDELTATR);
+		}
+
+		/**
+		 * 
+		 * @return
+		 */
+		int nusDim() {
+			
+			return getHeaderInt(FDNUSDIM);
+		}
+		
+	    /**
 		 * 
 		 * @param dimNumber
 		 * @return
@@ -1365,36 +1687,6 @@ public class NmrPipeReader {
 			else if (dimIndex == 4)
 
 				return getHeaderFloat(FDF4OFFPPM);
-			
-			else
-				
-				return Float.NaN;
-		}
-
-		/**
-		 * 
-		 * @param dimNumber
-		 * @return
-		 */
-		float ftFlag(int dimNumber) {
-
-			int dimIndex = dimIndex(dimNumber);
-			
-			if (dimIndex == 1)
-
-				return getHeaderFloat(FDF1FTFLAG);
-			
-			else if (dimIndex == 2)
-
-				return getHeaderFloat(FDF2FTFLAG);
-			
-			else if (dimIndex == 3)
-
-				return getHeaderFloat(FDF3FTFLAG);
-			
-			else if (dimIndex == 4)
-
-				return getHeaderFloat(FDF4FTFLAG);
 			
 			else
 				
