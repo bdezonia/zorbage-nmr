@@ -26,32 +26,24 @@ package nom.bdezonia.zorbage.nmr;
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.math.BigDecimal;
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.util.Arrays;
 
 import nom.bdezonia.zorbage.algebra.Algebra;
 import nom.bdezonia.zorbage.algebra.G;
-import nom.bdezonia.zorbage.coordinates.CoordinateSpace;
-import nom.bdezonia.zorbage.coordinates.LinearNdCoordinateSpace;
 import nom.bdezonia.zorbage.data.NdData;
 import nom.bdezonia.zorbage.datasource.IndexedDataSource;
 import nom.bdezonia.zorbage.metadata.MetaDataStore;
 import nom.bdezonia.zorbage.misc.DataBundle;
 import nom.bdezonia.zorbage.misc.DataSourceUtils;
-import nom.bdezonia.zorbage.misc.LongUtils;
 import nom.bdezonia.zorbage.sampling.IntegerIndex;
 import nom.bdezonia.zorbage.sampling.SamplingCartesianIntegerGrid;
 import nom.bdezonia.zorbage.sampling.SamplingIterator;
 import nom.bdezonia.zorbage.storage.Storage;
 import nom.bdezonia.zorbage.tuple.Tuple2;
-import nom.bdezonia.zorbage.tuple.Tuple4;
 import nom.bdezonia.zorbage.tuple.Tuple5;
 import nom.bdezonia.zorbage.type.complex.float32.ComplexFloat32Member;
 import nom.bdezonia.zorbage.type.quaternion.float32.QuaternionFloat32Member;
@@ -64,16 +56,6 @@ import nom.bdezonia.zorbage.type.real.float32.Float32Member;
  */
 @SuppressWarnings("unused")
 public class NmrPipeReader {
-
-	public static void main(String[] args) {
-		
-		//DataBundle bundle = NmrPipeReader.open("/home/bdz/dev/zorbage-nmr/CC_50ms.ft2");
-		//DataBundle bundle = NmrPipeReader.open("/home/bdz/dev/zorbage-nmr/CC_50ms-short.ft2");
-		//DataBundle bundle = NmrPipeReader.open("/home/bdz/dev/zorbage-nmr/data.ft2");
-		
-		DataBundle bundle = NmrPipeReader.readAllDatasets("/home/bdz/dev/zorbage-nmr/C50C50C_1.ft123");
-		
-	}
 
 	private static int HEADER_ENTRIES = 512;   // 512 floats
 	private static int HEADER_BYTE_SIZE = HEADER_ENTRIES * 4;
@@ -162,6 +144,11 @@ public class NmrPipeReader {
 		return bundle;
 	}
 	
+	/**
+	 * 
+	 * @param fileURI
+	 * @return
+	 */
 	private static
 	
 		long
@@ -204,6 +191,12 @@ public class NmrPipeReader {
 		}
 	}
 
+	/**
+	 * 
+	 * @param fileURI
+	 * @param numFloats
+	 * @return
+	 */
 	private static
 	
 		Tuple5<String, Integer, long[], IndexedDataSource<Float32Member>,
@@ -271,8 +264,8 @@ public class NmrPipeReader {
 				metadata.putString("dim " + i + " label",  reader.dimLabel(i));
 				metadata.putString("dim " + i + " unit",   reader.unit(i));
 				metadata.putFloat( "dim " + i + " offset", reader.offset(i));
-				metadata.putFloat( "dim " + i + " sw",     reader.sw(i));
-				metadata.putFloat( "dim " + i + " obs",    reader.obs(i));
+				metadata.putFloat( "dim " + i + " sweep width", reader.sweepWidth(i));
+				metadata.putFloat( "dim " + i + " obs freq",    reader.obsFreq(i));
 			}
 			
 			return new Tuple5<>(dataType.a(), dataType.b(), dims, data, metadata);
@@ -298,6 +291,14 @@ public class NmrPipeReader {
 		}
 	}
 
+	/**
+	 * 
+	 * @param numComponents
+	 * @param rawDims
+	 * @param numbers
+	 * @param metadata
+	 * @return
+	 */
 	private static
 	
 		NdData<Float32Member>
@@ -339,6 +340,14 @@ public class NmrPipeReader {
 		return nd;
 	}
 	
+	/**
+	 * 
+	 * @param numComponents
+	 * @param rawDims
+	 * @param numbers
+	 * @param metadata
+	 * @return
+	 */
 	private static
 	
 		NdData<ComplexFloat32Member>
@@ -452,6 +461,14 @@ public class NmrPipeReader {
 		return nd;
 	}
 
+	/**
+	 * 
+	 * @param numComponents
+	 * @param rawDims
+	 * @param numbers
+	 * @param metadata
+	 * @return
+	 */
 	private static
 	
 		NdData<QuaternionFloat32Member>
@@ -596,6 +613,13 @@ public class NmrPipeReader {
 		return nd;
 	}
 	
+	/**
+	 * 
+	 * @param <T>
+	 * @param <U>
+	 * @param algebra
+	 * @param data
+	 */
 	private static
 	
 		<T extends Algebra<T,U>,
@@ -650,33 +674,38 @@ public class NmrPipeReader {
 		}
 	}
 
+	/**
+	 * 
+	 * @param data
+	 */
 	private static
 	
 		void setUnitsEtc(NdData<?> data)
 	
 	{
-		BigDecimal[] offsets = new BigDecimal[data.numDimensions()];
-		BigDecimal[] scales = new BigDecimal[data.numDimensions()];
-		
 		for (int i = 0; i < data.numDimensions(); i++) {
 			
 			data.setAxisType(i, data.metadata().getString("dim "+i+" label"));
 			data.setAxisUnit(i, data.metadata().getString("dim "+i+" unit"));
-			offsets[i] = BigDecimal.valueOf(data.metadata().getFloat("dim "+i+" offset"));
-			scales[i] = BigDecimal.ONE;
 		}
-		
-		CoordinateSpace space = new LinearNdCoordinateSpace(scales, offsets);
-		
-		data.setCoordinateSpace(space);
 	}
 	
+	/**
+	 * 
+	 * @author bdezonia
+	 *
+	 */
 	private static class NmrPipeFileReader {
 
 		private int[] vars = new int[HEADER_ENTRIES];
 		
 		private boolean byteSwapNeeded = false;
 
+		/**
+		 * 
+		 * @param dis
+		 * @throws IOException
+		 */
 		void readHeader(DataInputStream dis) throws IOException {
 
 			for (int i = 0; i < vars.length; i++) {
@@ -739,16 +768,23 @@ public class NmrPipeReader {
 			System.out.println("FDF4LABEL " + intsToString(FDF4LABEL,2));
 		}
 		
-		// maybe the header vars are never ints but always floats. the little docs I've seen
-		//   seem to imply that. if so then this routine is not needed.
-		
+		/**
+		 * 
+		 * @param index
+		 * @return
+		 */
 		int getHeaderInt(int index) {
 			
 			int bits = intBits(vars[index]);
 
 			return bits;
 		}
-		
+
+		/**
+		 * 
+		 * @param index
+		 * @return
+		 */
 		float getHeaderFloat(int index) {
 
 			int bits = intBits(vars[index]);
@@ -756,6 +792,12 @@ public class NmrPipeReader {
 			return Float.intBitsToFloat(bits);
 		}
 		
+		/**
+		 * 
+		 * @param dis
+		 * @return
+		 * @throws IOException
+		 */
 		float nextDataFloat(DataInputStream dis) throws IOException {
 			
 			int bits = intBits(dis.readInt());
@@ -763,6 +805,11 @@ public class NmrPipeReader {
 			return Float.intBitsToFloat(bits);
 		}
 
+		/**
+		 * 
+		 * @param bits
+		 * @return
+		 */
 		private int intBits(int bits) {
 
 			if (byteSwapNeeded) {
@@ -773,6 +820,11 @@ public class NmrPipeReader {
 			return bits;
 		}
 		
+		/**
+		 * 
+		 * @param bits
+		 * @return
+		 */
 		private int swapInt(int bits) {
 			
 			int a = (bits >> 24) & 0xff;
@@ -785,10 +837,11 @@ public class NmrPipeReader {
 			return bits;
 		}
 
-		// TODO: this is not based on DIMORDER. It always does raw XY dims
-		//   for planes. I might need to support XZ and XA (and even others?)
-		//   as well.
-		
+
+		/**
+		 * 
+		 * @return
+		 */
 		private Tuple2<String,Integer> findDataType() {
 		
 			int dimCount = (int) getHeaderFloat(FDDIMCOUNT);
@@ -843,6 +896,10 @@ public class NmrPipeReader {
 		//   more nicely about what actual dims are rather than these
 		//   hacky calcs.
 		
+		/**
+		 * 
+		 * @return
+		 */
 		private long[] findDims() {
 			
 			int dimCount = (int) getHeaderFloat(FDDIMCOUNT);
@@ -909,6 +966,12 @@ public class NmrPipeReader {
 			}
 		}
 		
+		/**
+		 * 
+		 * @param startIndex
+		 * @param intCount
+		 * @return
+		 */
 		private String intsToString(int startIndex, int intCount) {
 			
 			StringBuilder b = new StringBuilder();
@@ -930,31 +993,51 @@ public class NmrPipeReader {
 			return b.toString();
 		}
 		
+		/**
+		 * 
+		 */
 		private String sourceName() {
 			
 			return intsToString(FDSRCNAME, 4);
 		}
 		
+		/**
+		 * 
+		 */
 		private String userName() {
 
 			return intsToString(FDUSERNAME, 4);
 		}
 		
+		/**
+		 * 
+		 */
 		private String operatorName() {
 			
 			return intsToString(FDOPERNAME, 8);
 		}
 
+		/**
+		 * 
+		 */
 		private String title() {
 			
 			return intsToString(FDTITLE, 15);
 		}
 
+		/**
+		 * 
+		 */
 		private String comment() {
 			
 			return intsToString(FDCOMMENT, 40);
 		}
 
+		/**
+		 * 
+		 * @param dimNumber
+		 * @return
+		 */
 		private int dimIndex(int dimNumber) {
 			
 			// needed to read as floats and cast as ints. this must be an ancient way
@@ -981,6 +1064,11 @@ public class NmrPipeReader {
 				throw new IllegalArgumentException("DIM NUMBER IS OUT OF BOUNDS "+dimNumber);
 		}
 		
+		/**
+		 * 
+		 * @param dimNumber
+		 * @return
+		 */
 		private String dimLabel(int dimNumber) {
 
 			int dimIndex = dimIndex(dimNumber);
@@ -1006,6 +1094,11 @@ public class NmrPipeReader {
 				return "?";
 		}
 		
+		/**
+		 * 
+		 * @param dimNumber
+		 * @return
+		 */
 		private String unit(int dimNumber) {
 			
 			int dimIndex = dimIndex(dimNumber);
@@ -1059,6 +1152,11 @@ public class NmrPipeReader {
 				return "unknown";
 		}
 		
+		/**
+		 * 
+		 * @param dimNumber
+		 * @return
+		 */
 		private float offset(int dimNumber) {
 
 			int dimIndex = dimIndex(dimNumber);
@@ -1084,7 +1182,12 @@ public class NmrPipeReader {
 				return 0;
 		}
 		
-		private float sw(int dimNumber) {
+		/**
+		 * 
+		 * @param dimNumber
+		 * @return Sweep width in Hz
+		 */
+		private float sweepWidth(int dimNumber) {
 
 			int dimIndex = dimIndex(dimNumber);
 			
@@ -1109,7 +1212,12 @@ public class NmrPipeReader {
 				return 0;
 		}
 		
-		private float obs(int dimNumber) {
+		/**
+		 * 
+		 * @param dimNumber
+		 * @return
+		 */
+		private float obsFreq(int dimNumber) {
 
 			int dimIndex = dimIndex(dimNumber);
 			
