@@ -28,12 +28,16 @@ import java.io.DataInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigDecimal;
+import java.math.MathContext;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
 
 import nom.bdezonia.zorbage.algebra.Algebra;
 import nom.bdezonia.zorbage.algebra.G;
+import nom.bdezonia.zorbage.coordinates.CoordinateSpace;
+import nom.bdezonia.zorbage.data.DimensionedDataSource;
 import nom.bdezonia.zorbage.data.NdData;
 import nom.bdezonia.zorbage.datasource.IndexedDataSource;
 import nom.bdezonia.zorbage.metadata.MetaDataStore;
@@ -687,6 +691,8 @@ public class NmrPipeReader {
 			data.setAxisType(i, data.metadata().getString("dim "+i+" label"));
 			data.setAxisUnit(i, data.metadata().getString("dim "+i+" unit"));
 		}
+		
+		data.setCoordinateSpace(new PipeSpace(data));
 	}
 	
 	/**
@@ -1636,49 +1642,38 @@ public class NmrPipeReader {
 
 			if (dimIndex == 1)
 				
-				val = getHeaderInt(FDF1UNITS);
+				val = (int) getHeaderFloat(FDF1FTFLAG);
 			
 			else if (dimIndex == 2)
 				
-				val = getHeaderInt(FDF2UNITS);
+				val = (int) getHeaderFloat(FDF2FTFLAG);
 			
 			else if (dimIndex == 3)
 				
-				val = getHeaderInt(FDF3UNITS);
+				val = (int) getHeaderFloat(FDF3FTFLAG);
 			
 			else if (dimIndex == 4)
 				
-				val = getHeaderInt(FDF4UNITS);
+				val = (int) getHeaderFloat(FDF4FTFLAG);
 			
 			else
 				
 				return "illegal dimIndex";
 
-			// NOTE this was documented in NDUNITS blurb in header. It may not actually apply.
-			
-			if (val == 0)
+			if (val == 0)  // time
 				
-				return "none";
+				return "pts"; // possibly secs or msecs
 			
-			else if (val == 1)
+			else if (val == 1)  // frequency
 				
-				return "seconds";
+				return "ppm";  // possibly "hz"
 			
-			else if (val == 2)
-				
-				return "hertz";
+			else {
 			
-			else if (val == 3)
-				
-				return "ppm";
-			
-			else if (val == 4)
-				
-				return "pts";
-			
-			else
+				System.out.println("unit "+dimNumber+" read from header value of "+val);
 				
 				return "unknown";
+			}
 		}
 		
 		/**
@@ -2683,5 +2678,82 @@ public class NmrPipeReader {
 	    final int FDF3OFFPPM = 482;
 	    final int FDF4OFFPPM = 483;
 	    // 484-511 = ?
+	}
+	
+	private static class PipeSpace implements CoordinateSpace {
+
+		private final DimensionedDataSource<?> data;
+		
+		private MathContext context;
+		
+		PipeSpace(DimensionedDataSource<?> data) {
+			
+			if (data.numDimensions() > 4)
+				throw new IllegalArgumentException("nmrPipe PipeSpace must be 4 dimensions or fewer");
+			
+			this.data = data;
+			
+			this.context = new MathContext(5);
+		}
+
+		@Override
+		public int numDimensions() {
+
+			return data.numDimensions();
+		}
+
+		@Override
+		public BigDecimal project(long[] coord, int axis) {
+			
+			if (axis < 0 || axis >= data.numDimensions())
+				throw new IllegalArgumentException("project() given mismatched dimensionalities");
+
+			BigDecimal orig = BigDecimal.valueOf(data.metadata().getFloat("dim "+axis+" offset"));
+			BigDecimal sw = BigDecimal.valueOf(data.metadata().getFloat("dim "+axis+" sweep width"));
+			BigDecimal obs = BigDecimal.valueOf(data.metadata().getFloat("dim "+axis+" obs freq"));
+			long u = coord[axis] + 1;
+			BigDecimal numer = BigDecimal.valueOf(data.dimension(axis)-u);
+			BigDecimal denom = BigDecimal.valueOf(data.dimension(axis));
+			return orig.add(sw.multiply(numer).divide(denom, context)).divide(obs, context);
+		}
+
+		@Override
+		public BigDecimal project(IntegerIndex coord, int axis) {
+			
+			if (axis < 0 || axis >= data.numDimensions())
+				throw new IllegalArgumentException("project() given mismatched dimensionalities");
+
+			BigDecimal orig = BigDecimal.valueOf(data.metadata().getFloat("dim "+axis+" offset"));
+			BigDecimal sw = BigDecimal.valueOf(data.metadata().getFloat("dim "+axis+" sweep width"));
+			BigDecimal obs = BigDecimal.valueOf(data.metadata().getFloat("dim "+axis+" obs freq"));
+			long u = coord.get(axis) + 1;
+			BigDecimal numer = BigDecimal.valueOf(data.dimension(axis)-u);
+			BigDecimal denom = BigDecimal.valueOf(data.dimension(axis));
+			return orig.add(sw.multiply(numer).divide(denom, context)).divide(obs, context);
+		}
+
+		@Override
+		public void project(long[] coord, BigDecimal[] output) {
+
+			for (int i = 0; i < coord.length; i++) {
+				
+				output[i] = project(coord, i);
+			}
+		}
+
+		@Override
+		public void project(IntegerIndex coord, BigDecimal[] output) {
+
+			for (int i = 0; i < coord.numDimensions(); i++) {
+				
+				output[i] = project(coord, i);
+			}
+		}
+
+		@Override
+		public void setPrecision(int decimalPlaces) {
+
+			this.context = new MathContext(decimalPlaces);
+		}
 	}
 }
