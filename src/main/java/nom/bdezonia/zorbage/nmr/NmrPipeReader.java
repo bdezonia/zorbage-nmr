@@ -2498,8 +2498,8 @@ public class NmrPipeReader {
 	    final int FDF1QUADFLAG = 55;
 	    final int FDF2QUADFLAG = 56;
 	    final int FDPIPEFLAG = 57;
-	    final int FDF3UNITS = 58;
-	    final int FDF4UNITS = 59;
+	    final int FDF3UNITS = 58;  // obsolete
+	    final int FDF4UNITS = 59;  // obsolete
 	    final int FDF3P0 = 60;
 	    final int FDF3P1 = 61;
 	    final int FDF4P0 = 62;
@@ -2542,7 +2542,7 @@ public class NmrPipeReader {
 	    final int FDF2OBS = 119;
 	    // 120-134 = ?
 	    final int FDMCFLAG = 135;
-	    final int FDF2UNITS = 152;
+	    final int FDF2UNITS = 152;  // obsolete
 	    final int FDNOISE = 153;
 	    // 154-156 = ?
 	    final int FDTEMPERATURE = 157;
@@ -2562,7 +2562,7 @@ public class NmrPipeReader {
 	    // 223-228 = ?
 	    final int FDF1SW = 229;
 	    // 230-233 = ?
-	    final int FDF1UNITS = 234;
+	    final int FDF1UNITS = 234;  // obsolete
 	    // 235-242 = ?
 	    final int FDF1LB = 243;
 	    // 244 = ?
