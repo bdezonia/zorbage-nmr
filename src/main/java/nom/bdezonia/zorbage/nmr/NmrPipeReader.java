@@ -2711,7 +2711,12 @@ public class NmrPipeReader {
 			BigDecimal orig = BigDecimal.valueOf(data.metadata().getFloat("dim "+axis+" offset"));
 			BigDecimal sw = BigDecimal.valueOf(data.metadata().getFloat("dim "+axis+" sweep width"));
 			BigDecimal obs = BigDecimal.valueOf(data.metadata().getFloat("dim "+axis+" obs freq"));
-			long u = coord[axis] + 1;
+			final long v;
+			if (axis == 1)
+				v = data.dimension(1) - 1 - coord[1];
+			else
+				v = coord[axis];
+			final long u = v + 1;
 			BigDecimal numer = BigDecimal.valueOf(data.dimension(axis)-u);
 			BigDecimal denom = BigDecimal.valueOf(data.dimension(axis));
 			return orig.add(sw.multiply(numer).divide(denom, context)).divide(obs, context);
@@ -2726,7 +2731,12 @@ public class NmrPipeReader {
 			BigDecimal orig = BigDecimal.valueOf(data.metadata().getFloat("dim "+axis+" offset"));
 			BigDecimal sw = BigDecimal.valueOf(data.metadata().getFloat("dim "+axis+" sweep width"));
 			BigDecimal obs = BigDecimal.valueOf(data.metadata().getFloat("dim "+axis+" obs freq"));
-			long u = coord.get(axis) + 1;
+			final long v;
+			if (axis == 1)
+				v = data.dimension(1) - 1 - coord.get(1);
+			else
+				v = coord.get(axis);
+			final long u = v + 1;
 			BigDecimal numer = BigDecimal.valueOf(data.dimension(axis)-u);
 			BigDecimal denom = BigDecimal.valueOf(data.dimension(axis));
 			return orig.add(sw.multiply(numer).divide(denom, context)).divide(obs, context);
