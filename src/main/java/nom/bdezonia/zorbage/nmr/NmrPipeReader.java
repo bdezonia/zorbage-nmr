@@ -686,6 +686,9 @@ public class NmrPipeReader {
 		void setUnitsEtc(NdData<?> data)
 	
 	{
+		data.setValueType("Count");
+		data.setValueUnit("");
+		
 		for (int i = 0; i < data.numDimensions(); i++) {
 			
 			data.setAxisType(i, data.metadata().getString("dim "+i+" label"));
