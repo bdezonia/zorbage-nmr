@@ -686,7 +686,7 @@ public class NmrPipeReader {
 		void setUnitsEtc(NdData<?> data)
 	
 	{
-		data.setValueType("Count");
+		data.setValueType("Amplitude");
 		data.setValueUnit("");
 		
 		for (int i = 0; i < data.numDimensions(); i++) {
