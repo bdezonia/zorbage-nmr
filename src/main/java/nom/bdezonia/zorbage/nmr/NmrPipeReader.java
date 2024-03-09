@@ -262,6 +262,12 @@ public class NmrPipeReader {
 			metadata.putString("source", reader.sourceName());
 			metadata.putString("title", reader.title());
 			metadata.putString("comment", reader.comment());
+			metadata.putInt("creation year", reader.creationYear());
+			metadata.putInt("creation month", reader.creationMonth());
+			metadata.putInt("creation day", reader.creationDay());
+			metadata.putInt("creation hour", reader.creationHour());
+			metadata.putInt("creation minute", reader.creationMinute());
+			metadata.putInt("creation second", reader.creationSecond());
 			
 			for (int i = 0; i < 4; i++) {
 				metadata.putString("dim " + i + " label",  reader.dimLabel(i));
