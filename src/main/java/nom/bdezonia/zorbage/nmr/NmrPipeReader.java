@@ -2305,6 +2305,9 @@ public class NmrPipeReader {
 
 			int dimIndex = dimIndex(dimNumber);
 			
+			// needed to read flags as floats and treat as ints. this
+			//   must be an ancient way to get ints from the header.
+			
 			if (dimIndex == 1)
 
 				return getHeaderFloat(FDF1QUADFLAG) == 1 ? 1 : 2;
