@@ -835,20 +835,16 @@ public class NmrPipeReader {
 			int numComponents = 1;
 
 			if (dimCount >= 1)
-				numComponents *= (getHeaderFloat(FDF2QUADFLAG) == 1 ? 1 : 2);
+				numComponents *= elemsPerAxis(0);
 
 			if (dimCount >= 2)
-				numComponents *= (getHeaderFloat(FDF1QUADFLAG) == 1 ? 1 : 2);
+				numComponents *= elemsPerAxis(1);
 
-/*
 			if (dimCount >= 3)
-				numComponents *= (getHeaderFloat(FDF3QUADFLAG) == 1 ? 1 : 2);
+				numComponents *= elemsPerAxis(2);
 
 			if (dimCount >= 4)
-				numComponents *= (getHeaderFloat(FDF4QUADFLAG) == 1 ? 1 : 2);
-*/
-			
-			// TODO: do I want all of these cases below to return ("point",numComponents)
+				numComponents *= elemsPerAxis(3);
 			
 			if (numComponents == 1) {
 				return new Tuple2<>("real", numComponents);
@@ -858,10 +854,24 @@ public class NmrPipeReader {
 				return new Tuple2<>("complex", numComponents);
 			}
 			
-			if (numComponents == 4) {
-				return new Tuple2<>("quaternion", numComponents);
-			}
+			// if here then numComponents == 4 or 8 or 16: hyper complex numbers
+			
+			// TODO: someday when hyper complex numbers are supported
 
+			//if (numComponents == 4) {
+			//	return new Tuple2<>("hypercomplex4", numComponents);
+			//}
+			
+			//if (numComponents == 8) {
+			//	return new Tuple2<>("hypercomplex8", numComponents);
+			//}
+			
+			//if (numComponents == 16) {
+			//	return new Tuple2<>("hypercomplex16", numComponents);
+			//}
+
+			// general fallback
+			
 			return new Tuple2<>("point", numComponents);
 		}
 
@@ -877,7 +887,8 @@ public class NmrPipeReader {
 		// based on ideas I saw in nmrglue: maybe not what I want.
 		//   perhaps we should call findDataType() first and reason
 		//   more nicely about what actual dims are rather than these
-		//   hacky calcs.
+		//   hacky calcs. See this code for derivation source:
+		//     https://github.com/jjhelmus/nmrglue/blob/e5007e70844d549c642a9cba067aa05319ba1eab/nmrglue/fileio/pipe.py#L1423
 		
 		/**
 		 * 
@@ -1637,7 +1648,7 @@ public class NmrPipeReader {
 				
 				return "unknown";
 		}
-		
+
 		/**
 		 * 
 		 * @param dimNumber
@@ -2290,29 +2301,29 @@ public class NmrPipeReader {
 		 * @param dimNumber
 		 * @return
 		 */
-		int dataTypeCode(int dimNumber) {
+		int elemsPerAxis(int dimNumber) {
 
 			int dimIndex = dimIndex(dimNumber);
 			
 			if (dimIndex == 1)
 
-				return getHeaderInt(FDF1QUADFLAG);
+				return getHeaderFloat(FDF1QUADFLAG) == 1 ? 1 : 2;
 			
 			else if (dimIndex == 2)
 
-				return getHeaderInt(FDF2QUADFLAG);
+				return getHeaderFloat(FDF2QUADFLAG) == 1 ? 1 : 2;
 			
 			else if (dimIndex == 3)
 
-				return getHeaderInt(FDF3QUADFLAG);
+				return getHeaderFloat(FDF3QUADFLAG) == 1 ? 1 : 2;
 			
 			else if (dimIndex == 4)
 
-				return getHeaderInt(FDF4QUADFLAG);
+				return getHeaderFloat(FDF4QUADFLAG) == 1 ? 1 : 2;
 			
 			else
 				
-				return Integer.MIN_VALUE;
+				return 0;
 		}
 
 		/**
