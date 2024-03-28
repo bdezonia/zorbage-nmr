@@ -3,6 +3,14 @@ zorbage-nmr
 This repository contains code for loading various NMR file formats into zorbage
 structures for further processing.
 
+Currently supported file types include:
+
+  - nmrPipe binary formats
+  - nmrPipe text-based formats
+
+Future development directions will be to add more formats such that this
+  package is like nmrglue but for zorbage backed data.
+
 To learn more about Zorbage please visit https://github.com/bdezonia/zorbage
 
 How to include zorbage-nmr in your Maven project
@@ -20,5 +28,4 @@ How to include zorbage-nmr in a different build system
   See https://search.maven.org/artifact/io.github.bdezonia/zorbage-nmr/0.0.3.2/jar
   for instructions on how to reference zorbage-netcdf in build systems such as
   Gradle or others.
-
 
