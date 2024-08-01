@@ -414,9 +414,9 @@ public class NmrPipeReader {
 				
 				for (long x = 0; x < numX; x++) {
 					
-					complexes.get(y * numX + x, complex);
-					
 					numbers.get(n++, value);
+					
+					complexes.get(y * numX + x, complex);
 					
 					complex.setR(value);
 
@@ -427,9 +427,9 @@ public class NmrPipeReader {
 				
 				for (long x = 0; x < numX; x++) {
 					
-					complexes.get(y * numX + x, complex);
-					
 					numbers.get(n++, value);
+					
+					complexes.get(y * numX + x, complex);
 					
 					complex.setI(value);
 
@@ -540,9 +540,9 @@ public class NmrPipeReader {
 				
 				for (long x = 0; x < numX; x++) {
 					
-					quats.get(y * numX + x, quat);
-					
 					numbers.get(n++, value);
+					
+					quats.get(y * numX + x, quat);
 					
 					quat.setR(value);
 
@@ -553,9 +553,9 @@ public class NmrPipeReader {
 				
 				for (long x = 0; x < numX; x++) {
 					
-					quats.get(y * numX + x, quat);
-					
 					numbers.get(n++, value);
+					
+					quats.get(y * numX + x, quat);
 					
 					quat.setI(value);
 
@@ -566,9 +566,9 @@ public class NmrPipeReader {
 				
 				for (long x = 0; x < numX; x++) {
 					
-					quats.get(y * numX + x, quat);
-					
 					numbers.get(n++, value);
+					
+					quats.get(y * numX + x, quat);
 					
 					quat.setJ(value);
 
@@ -579,9 +579,9 @@ public class NmrPipeReader {
 				
 				for (long x = 0; x < numX; x++) {
 					
-					quats.get(y * numX + x, quat);
-					
 					numbers.get(n++, value);
+					
+					quats.get(y * numX + x, quat);
 					
 					quat.setK(value);
 
