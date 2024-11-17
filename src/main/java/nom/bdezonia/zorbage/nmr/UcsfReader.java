@@ -263,9 +263,9 @@ public class UcsfReader {
 			
 			String fileType = string(dis.readNBytes(10));
 			
-			if (fileType != "UCSF NMR") {
+			if (!("UCSF NMR".equals(fileType))) {
 			
-				System.out.println("input file is not a UCSF NMR data file");
+				//System.out.println("input file is not a 'UCSF NMR' data file ("+fileType+")");
 				
 				return null;
 			}
@@ -455,6 +455,8 @@ public class UcsfReader {
 		
 		IntegerIndex pos = new IntegerIndex(numD);
 		
+		// walk all the tiles
+		
 		for (int xt = 0; xt < xTileCount; xt++) {
 
 			int xOrigin = xt * xTileSize;
@@ -471,13 +473,15 @@ public class UcsfReader {
 
 						int aOrigin = at * aTileSize;
 						
-						// read into tile structure
+						// read a tile's worth of data into the tile structure
 
 						for (int n = 0; n < numbers.length; n++) {
 							
 							numbers[n] = dis.readFloat();
 						}
 
+						// traverse the tile structure
+						
 						int idx = 0;
 						
 						for (int xOff = 0; xOff < xTileSize; xOff++) {
@@ -488,41 +492,84 @@ public class UcsfReader {
 									
 									for (int aOff = 0; aOff < aTileSize; aOff++) {
 
-										idx += info.componentCount;
+										// calc the real world coords of the point
 										
 										int x = xOrigin + xOff;
 										int y = yOrigin + yOff;
 										int z = zOrigin + zOff;
 										int a = aOrigin + aOff;
-										
-										if (info.componentCount > 0) {
-											
-											pos.set(0,x);
-										}
-										
-										if (info.componentCount > 1) {
-											
-											pos.set(1,y);
-										}
-										
-										if (info.componentCount > 2) {
-											
-											pos.set(2,z);
-										}
-										
-										if (info.componentCount > 3) {
-											
-											pos.set(3,a);
-										}
-										
-										for (int i = 0; i < tmpFloats.length; i++) {
-											
-											tmpFloats[i] = numbers[idx + i];
-										}
 
-										value.setFromFloats(tmpFloats);
+										// make sure the point is not on the out of bounds edge of a tile
 										
-										data.set(pos, value);
+										boolean inBounds = true;
+										
+										if (info.dimCount > 0 && x >= info.axisHeaders[0].dataPtCount)
+											
+											inBounds = false;
+										
+										else if (info.dimCount > 1 && y >= info.axisHeaders[1].dataPtCount)
+											
+											inBounds = false;
+										
+										else if (info.dimCount > 2 && z >= info.axisHeaders[2].dataPtCount)
+											
+											inBounds = false;
+										
+										else if (info.dimCount > 3 && a >= info.axisHeaders[3].dataPtCount)
+										
+											inBounds = false;
+										
+										if (inBounds) {
+
+											// we have a good coordinate
+											
+											// set the position of the coordinate
+											
+											if (info.dimCount > 0) {
+												
+												pos.set(0, x);
+											}
+											
+											if (info.dimCount > 1) {
+												
+												// TODO - verify this swap makes the data look correct.
+												//   Might need to swap X instead or as well.
+												
+												// SWAP y to match zorbage conventions
+												
+												pos.set(1, info.axisHeaders[1].dataPtCount - y - 1);
+											}
+											
+											if (info.dimCount > 2) {
+												
+												pos.set(2, z);
+											}
+											
+											if (info.dimCount > 3) {
+												
+												pos.set(3, a);
+											}
+											
+											// gather the component values from the tile
+											
+											for (int i = 0; i < info.componentCount; i++) {
+												
+												tmpFloats[i] = numbers[idx + i];
+											}
+
+											// construct our U value from those floats
+											
+											value.setFromFloats(tmpFloats);
+											
+											// set the output data at the position to the U value
+											
+											data.set(pos, value);
+										}
+										
+										// whether position was in bounds or not make sure to
+										//   increment the position to the next set of relevant values.
+										
+										idx += info.componentCount;
 									}
 								}
 							}
