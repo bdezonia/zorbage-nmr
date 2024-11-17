@@ -47,6 +47,9 @@ import nom.bdezonia.zorbage.type.octonion.float32.OctonionFloat32Member;
 import nom.bdezonia.zorbage.type.quaternion.float32.QuaternionFloat32Member;
 import nom.bdezonia.zorbage.type.real.float32.Float32Member;
 
+// TODO: X and Y seem reversed compared to FT2s in terms of dimensions.
+//   Who is wrong???
+
 /**
  * Read sparky UCSF files into zorbage structures.
  * 
@@ -185,17 +188,23 @@ public class UcsfReader {
 		
 		HeaderInfo info = readHeader(dis);
 		
-		if (info == null)
+		if (info == null) {
+		
+			try { dis.close(); } catch (Exception e) { ; }
 			
 			return null;
+		}
 
 		// populate dims from header info
 		
 		long[] dims = dimsFromHeader(info);
 		
-		if (dims.length == 0)
+		if (dims.length == 0) {
 			
+			try { dis.close(); } catch (Exception e) { ; }
+		
 			return null;
+		}
 
 		T alg = null;
 		
@@ -217,6 +226,8 @@ public class UcsfReader {
 		}
 		else {
 			
+			try { dis.close(); } catch (Exception e) { ; }
+			
 			throw new IllegalArgumentException("unexpected component count "+info.componentCount);
 		}
 
@@ -230,6 +241,8 @@ public class UcsfReader {
 
 			System.out.println("IO EXCEPTION while reading numeric data! "+e3);
 			
+			try { dis.close(); } catch (Exception e) { ; }
+			
 			return null;
 		}
 		
@@ -240,15 +253,40 @@ public class UcsfReader {
 			data.metadata().merge(metadata);
 		
 		data.setSource(uri.toString());
+		
+		data.setValueType("Amplitude");
 
-		try {
-			
-			dis.close();
+		data.setValueUnit("");
 
-		} catch (Exception e4) {
+		if (info.dimCount > 0) {
 			
-			// ignore
+			data.setAxisType(0, info.axisHeaders[0].atomName);
+			
+			data.setAxisUnit(0, "ppm");
 		}
+
+		if (info.dimCount > 1) {
+			
+			data.setAxisType(1, info.axisHeaders[1].atomName);
+			
+			data.setAxisUnit(1, "ppm");
+		}
+
+		if (info.dimCount > 2) {
+			
+			data.setAxisType(2, info.axisHeaders[2].atomName);
+			
+			data.setAxisUnit(2, "ppm");
+		}
+
+		if (info.dimCount > 3) {
+			
+			data.setAxisType(3, info.axisHeaders[3].atomName);
+			
+			data.setAxisUnit(3, "ppm");
+		}
+
+		try { dis.close(); } catch (Exception e) { ; }
 		
 		return new Tuple2<>(alg, data);
 	}
@@ -363,6 +401,8 @@ public class UcsfReader {
 			aDim = info.axisHeaders[3].dataPtCount;
 		}
 				
+		// TODO do I need to reverse the order of all these dims?
+		
 		if (xDim > 0 && yDim > 0 && zDim > 0 && aDim > 0) {
 			
 			return new long[] {xDim, yDim, zDim, aDim};
@@ -531,9 +571,6 @@ public class UcsfReader {
 											}
 											
 											if (info.dimCount > 1) {
-												
-												// TODO - verify this swap makes the data look correct.
-												//   Might need to swap X instead or as well.
 												
 												// SWAP y to match zorbage conventions
 												
