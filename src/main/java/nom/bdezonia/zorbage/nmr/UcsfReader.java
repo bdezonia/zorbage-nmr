@@ -196,7 +196,7 @@ public class UcsfReader {
 		if (dims.length == 0)
 			
 			return null;
-		
+
 		T alg = null;
 		
 		if (info.componentCount <= 1) {
@@ -326,6 +326,8 @@ public class UcsfReader {
 		axis.specWidth = dis.readFloat();
 		axis.center = dis.readFloat();
 		dis.readNBytes(96);
+		
+		axis.tileCount = (int) Math.ceil(((double) axis.dataPtCount) / axis.tileSize);
 		
 		return axis;
 	}
