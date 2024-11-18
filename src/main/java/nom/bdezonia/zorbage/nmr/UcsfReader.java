@@ -675,6 +675,17 @@ public class UcsfReader {
 	
 	private static
 	
+		String ordinal(int val)
+	{
+		if (val == 0) return "1st";
+		if (val == 1) return "2nd";
+		if (val == 2) return "3rd";
+		if (val == 3) return "4th";
+		return "Unknown";
+	}
+	
+	private static
+	
 		MetaDataStore
 			
 			metadataFromHeader(HeaderInfo info)
@@ -689,33 +700,38 @@ public class UcsfReader {
 		int yPos = yPos(info);
 		int zPos = zPos(info);
 		int aPos = aPos(info);
+		
+		String xPosOrd = ordinal(xPos);
+		String yPosOrd = ordinal(yPos);
+		String zPosOrd = ordinal(zPos);
+		String aPosOrd = ordinal(aPos);
 
 		if (xPos >= 0) {
 			
-			metadata.putString("x axis spectrometer frequency (MHz)", Float.toString(info.axisHeaders[0].spectrometerFrequency));
-			metadata.putString("x axis spectral width (Hz)", Float.toString(info.axisHeaders[0].spectralWidth));
-			metadata.putString("x axis transmitter offset (ppm)", Float.toString(info.axisHeaders[0].transmitterOffset));
+			metadata.putString(xPosOrd+" axis spectrometer frequency (MHz)", Float.toString(info.axisHeaders[0].spectrometerFrequency));
+			metadata.putString(xPosOrd+" axis spectral width (Hz)", Float.toString(info.axisHeaders[0].spectralWidth));
+			metadata.putString(xPosOrd+" axis transmitter offset (ppm)", Float.toString(info.axisHeaders[0].transmitterOffset));
 		}
 
 		if (yPos >= 0) {
 			
-			metadata.putString("y axis spectrometer frequency (MHz)", Float.toString(info.axisHeaders[1].spectrometerFrequency));
-			metadata.putString("y axis spectral width (Hz)", Float.toString(info.axisHeaders[1].spectralWidth));
-			metadata.putString("y axis transmitter offset (ppm)", Float.toString(info.axisHeaders[1].transmitterOffset));
+			metadata.putString(yPosOrd+" axis spectrometer frequency (MHz)", Float.toString(info.axisHeaders[1].spectrometerFrequency));
+			metadata.putString(yPosOrd+" axis spectral width (Hz)", Float.toString(info.axisHeaders[1].spectralWidth));
+			metadata.putString(yPosOrd+" axis transmitter offset (ppm)", Float.toString(info.axisHeaders[1].transmitterOffset));
 		}
 
 		if (zPos >= 0) {
 			
-			metadata.putString("z axis spectrometer frequency (MHz)", Float.toString(info.axisHeaders[2].spectrometerFrequency));
-			metadata.putString("z axis spectral width (Hz)", Float.toString(info.axisHeaders[2].spectralWidth));
-			metadata.putString("z axis transmitter offset (ppm)", Float.toString(info.axisHeaders[2].transmitterOffset));
+			metadata.putString(zPosOrd+" axis spectrometer frequency (MHz)", Float.toString(info.axisHeaders[2].spectrometerFrequency));
+			metadata.putString(zPosOrd+" axis spectral width (Hz)", Float.toString(info.axisHeaders[2].spectralWidth));
+			metadata.putString(zPosOrd+" axis transmitter offset (ppm)", Float.toString(info.axisHeaders[2].transmitterOffset));
 		}
 
 		if (aPos >= 0) {
 			
-			metadata.putString("a axis spectrometer frequency (MHz)", Float.toString(info.axisHeaders[3].spectrometerFrequency));
-			metadata.putString("a axis spectral width (Hz)", Float.toString(info.axisHeaders[3].spectralWidth));
-			metadata.putString("a axis transmitter offset (ppm)", Float.toString(info.axisHeaders[3].transmitterOffset));
+			metadata.putString(aPosOrd+" axis spectrometer frequency (MHz)", Float.toString(info.axisHeaders[3].spectrometerFrequency));
+			metadata.putString(aPosOrd+" axis spectral width (Hz)", Float.toString(info.axisHeaders[3].spectralWidth));
+			metadata.putString(aPosOrd+" axis transmitter offset (ppm)", Float.toString(info.axisHeaders[3].transmitterOffset));
 		}
 		
 		return metadata;
