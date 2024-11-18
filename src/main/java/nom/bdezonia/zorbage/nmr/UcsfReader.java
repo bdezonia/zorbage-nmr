@@ -685,11 +685,37 @@ public class UcsfReader {
 		metadata.putString("date", info.date);
 		metadata.putString("comment", info.comment);
 
-		for (int i = 0; i < info.dimCount; i++) {
+		int xPos = xPos(info);
+		int yPos = yPos(info);
+		int zPos = zPos(info);
+		int aPos = aPos(info);
+
+		if (xPos >= 0) {
 			
-			metadata.putString("axis "+i+" spectrometer frequency (MHz)", Float.toString(info.axisHeaders[i].spectrometerFrequency));
-			metadata.putString("axis "+i+" spectral width (Hz)", Float.toString(info.axisHeaders[i].spectralWidth));
-			metadata.putString("axis "+i+" transmitter offset (ppm)", Float.toString(info.axisHeaders[i].transmitterOffset));
+			metadata.putString("x axis spectrometer frequency (MHz)", Float.toString(info.axisHeaders[0].spectrometerFrequency));
+			metadata.putString("x axis spectral width (Hz)", Float.toString(info.axisHeaders[0].spectralWidth));
+			metadata.putString("x axis transmitter offset (ppm)", Float.toString(info.axisHeaders[0].transmitterOffset));
+		}
+
+		if (yPos >= 0) {
+			
+			metadata.putString("y axis spectrometer frequency (MHz)", Float.toString(info.axisHeaders[1].spectrometerFrequency));
+			metadata.putString("y axis spectral width (Hz)", Float.toString(info.axisHeaders[1].spectralWidth));
+			metadata.putString("y axis transmitter offset (ppm)", Float.toString(info.axisHeaders[1].transmitterOffset));
+		}
+
+		if (zPos >= 0) {
+			
+			metadata.putString("z axis spectrometer frequency (MHz)", Float.toString(info.axisHeaders[2].spectrometerFrequency));
+			metadata.putString("z axis spectral width (Hz)", Float.toString(info.axisHeaders[2].spectralWidth));
+			metadata.putString("z axis transmitter offset (ppm)", Float.toString(info.axisHeaders[2].transmitterOffset));
+		}
+
+		if (aPos >= 0) {
+			
+			metadata.putString("a axis spectrometer frequency (MHz)", Float.toString(info.axisHeaders[3].spectrometerFrequency));
+			metadata.putString("a axis spectral width (Hz)", Float.toString(info.axisHeaders[3].spectralWidth));
+			metadata.putString("a axis transmitter offset (ppm)", Float.toString(info.axisHeaders[3].transmitterOffset));
 		}
 		
 		return metadata;
