@@ -48,7 +48,12 @@ import nom.bdezonia.zorbage.type.quaternion.float32.QuaternionFloat32Member;
 import nom.bdezonia.zorbage.type.real.float32.Float32Member;
 
 /**
- * Read sparky UCSF files into zorbage structures.
+ * Read UCSF NRM files into zorbage structures.
+ * 
+ * This reader currently only reads the latest version of UCSF files.
+ * Since that was released numerous years ago this should not be much of
+ * a problem in practice. But one might come across old UCSF files that
+ * cannot be read with this reader.
  * 
  * @author Barry DeZonia
  */
