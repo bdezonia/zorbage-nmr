@@ -313,7 +313,7 @@ public class UcsfReader {
 			
 			if (!("UCSF NMR".equals(fileType))) {
 			
-				//System.out.println("input file is not a 'UCSF NMR' data file ("+fileType+")");
+				System.out.println("input file is not a 'UCSF NMR' data file ("+fileType+")");
 				
 				return null;
 			}
@@ -332,8 +332,8 @@ public class UcsfReader {
 			info.comment = string(dis.readNBytes(80));
 			dis.readNBytes(51);
 
-			// NOTE: It seems that axis headers are always defined as:
-			//   X then Y then Z then A
+			// NOTE: It seems that axis headers are always defined in
+			//   this order: X then Y then Z then A.
 			
 			for (int i = 0; i < info.dimCount; i++) {
 				
