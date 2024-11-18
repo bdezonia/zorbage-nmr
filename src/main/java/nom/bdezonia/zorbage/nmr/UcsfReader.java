@@ -697,17 +697,17 @@ public class UcsfReader {
 	
 	private static String string(byte[] bytes) {
 		
-		String result = "";
+		StringBuilder result = new StringBuilder();
 		
 		for (int i = 0; i < bytes.length; i++) {
 			
 			if (bytes[i] == 0)
 				
-				return result;
+				break;
 			
-			result = result + (char) bytes[i];
+			result.append((char) bytes[i]);
 		}
 		
-		return result;
+		return result.toString();
 	}
 }
