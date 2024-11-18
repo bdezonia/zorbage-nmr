@@ -483,14 +483,14 @@ public class UcsfReader {
 
 		if (xPos >= 0) {
 			
-			yTileCount = info.axisHeaders[0].tileCount;
-			yTileSize = info.axisHeaders[0].tileSize;
+			xTileCount = info.axisHeaders[0].tileCount;
+			xTileSize = info.axisHeaders[0].tileSize;
 		}
 
 		if (yPos >= 0) {
 			
-			xTileCount = info.axisHeaders[1].tileCount;
-			xTileSize = info.axisHeaders[1].tileSize;
+			yTileCount = info.axisHeaders[1].tileCount;
+			yTileSize = info.axisHeaders[1].tileSize;
 		}
 
 		if (zPos >= 0) {
