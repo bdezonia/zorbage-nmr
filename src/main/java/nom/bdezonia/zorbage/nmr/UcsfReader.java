@@ -48,7 +48,8 @@ import nom.bdezonia.zorbage.type.quaternion.float32.QuaternionFloat32Member;
 import nom.bdezonia.zorbage.type.real.float32.Float32Member;
 
 // TODO: X and Y seem reversed compared to FT2s in terms of dimensions.
-//   Who is wrong???
+//   Who is wrong??? Note that older file spec had X and Y swapped though
+//   I do not think that is the problem here.
 
 /**
  * Read sparky UCSF files into zorbage structures.
@@ -66,8 +67,12 @@ public class UcsfReader {
 
 		String fileType = "";
 		int dimCount = 0;
+		int encoding = 0;
 		int componentCount = 0;
 		int fileVersion = 0;
+		String owner = "";
+		String date = "";
+		String comment = "";
 		AxisHeader[] axisHeaders = new AxisHeader[4];  // all null
 	}
 	
@@ -78,9 +83,9 @@ public class UcsfReader {
 		int    dataPtCount = 0;
 		int    tileSize = 0;
 		int    tileCount = 0;
-		float  specFreq = 0;
-		float  specWidth = 0;
-		float  center = 0;
+		float  spectrometerFrequency = 0;
+		float  spectralWidth = 0;
+		float  transmitterOffset = 0;
 	}
 	
 	// --- PUBLIC API ---
@@ -311,13 +316,16 @@ public class UcsfReader {
 			HeaderInfo info = new HeaderInfo();
 			
 			info.fileType = fileType;
-			info.dimCount = dis.readByte();
-			info.componentCount = dis.readByte();
-			dis.readByte();
-			info.fileVersion = dis.readByte();
+			info.dimCount = dis.readByte() & 0xff;
+			info.componentCount = dis.readByte() & 0xff;
+			info.encoding = dis.readByte();
+			info.fileVersion = dis.readByte() & 0xff;
 			if (info.fileVersion != 2)
 				System.out.println("Unexpected file version "+info.fileVersion);
-			dis.readNBytes(166);
+			info.owner = string(dis.readNBytes(9));
+			info.date = string(dis.readNBytes(26));
+			info.comment = string(dis.readNBytes(80));
+			dis.readNBytes(51);
 			
 			if (info.dimCount > 0) {
 				
@@ -356,13 +364,15 @@ public class UcsfReader {
 		AxisHeader axis = new AxisHeader();
 	
 		axis.atomName = string(dis.readNBytes(6));
+		if (axis.atomName.equals(""))
+			axis.atomName = "1H";
 		dis.readNBytes(2);
 		axis.dataPtCount = dis.readInt();
 		dis.readNBytes(4);
 		axis.tileSize = dis.readInt();
-		axis.specFreq = dis.readFloat();
-		axis.specWidth = dis.readFloat();
-		axis.center = dis.readFloat();
+		axis.spectrometerFrequency = dis.readFloat();  // MHz
+		axis.spectralWidth = dis.readFloat(); // Hz
+		axis.transmitterOffset = dis.readFloat(); // ppm
 		dis.readNBytes(96);
 		
 		axis.tileCount = (int) Math.ceil(((double) axis.dataPtCount) / axis.tileSize);
@@ -624,6 +634,17 @@ public class UcsfReader {
 			metadataFromHeader(HeaderInfo info)
 	{
 		MetaDataStore metadata = new MetaDataStore();
+
+		metadata.putString("owner", info.owner);
+		metadata.putString("date", info.date);
+		metadata.putString("comment", info.comment);
+
+		for (int i = 0; i < info.dimCount; i++) {
+			
+			metadata.putString("axis "+i+" spectrometer frequency (MHz)", Float.toString(info.axisHeaders[i].spectrometerFrequency));
+			metadata.putString("axis "+i+" spectral width (Hz)", Float.toString(info.axisHeaders[i].spectralWidth));
+			metadata.putString("axis "+i+" transmitter offset (ppm)", Float.toString(info.axisHeaders[i].transmitterOffset));
+		}
 		
 		return metadata;
 	}
