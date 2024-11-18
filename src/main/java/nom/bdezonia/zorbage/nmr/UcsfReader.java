@@ -47,10 +47,6 @@ import nom.bdezonia.zorbage.type.octonion.float32.OctonionFloat32Member;
 import nom.bdezonia.zorbage.type.quaternion.float32.QuaternionFloat32Member;
 import nom.bdezonia.zorbage.type.real.float32.Float32Member;
 
-// TODO: X and Y seem reversed compared to FT2s in terms of dimensions.
-//   Who is wrong??? Note that older file spec had X and Y swapped though
-//   I do not think that is the problem here.
-
 /**
  * Read sparky UCSF files into zorbage structures.
  * 
@@ -76,7 +72,6 @@ public class UcsfReader {
 		AxisHeader[] axisHeaders = new AxisHeader[4];  // all null
 	}
 	
-	@SuppressWarnings("unused")
 	private static class AxisHeader {
 		
 		String atomName = "";
@@ -263,32 +258,37 @@ public class UcsfReader {
 
 		data.setValueUnit("");
 
-		if (info.dimCount > 0) {
+		int xPos = xPos(info);
+		int yPos = yPos(info);
+		int zPos = zPos(info);
+		int aPos = aPos(info);
+		
+		if (xPos >= 0) {
 			
-			data.setAxisType(0, info.axisHeaders[0].atomName);
+			data.setAxisType(xPos, info.axisHeaders[xPos].atomName);
 			
-			data.setAxisUnit(0, "ppm");
+			data.setAxisUnit(xPos, "ppm");
 		}
 
-		if (info.dimCount > 1) {
+		if (yPos >= 0) {
 			
-			data.setAxisType(1, info.axisHeaders[1].atomName);
+			data.setAxisType(yPos, info.axisHeaders[yPos].atomName);
 			
-			data.setAxisUnit(1, "ppm");
+			data.setAxisUnit(yPos, "ppm");
 		}
 
-		if (info.dimCount > 2) {
+		if (zPos >= 0) {
 			
-			data.setAxisType(2, info.axisHeaders[2].atomName);
+			data.setAxisType(zPos, info.axisHeaders[zPos].atomName);
 			
-			data.setAxisUnit(2, "ppm");
+			data.setAxisUnit(zPos, "ppm");
 		}
 
-		if (info.dimCount > 3) {
+		if (aPos >= 0) {
 			
-			data.setAxisType(3, info.axisHeaders[3].atomName);
+			data.setAxisType(aPos, info.axisHeaders[aPos].atomName);
 			
-			data.setAxisUnit(3, "ppm");
+			data.setAxisUnit(aPos, "ppm");
 		}
 
 		try { dis.close(); } catch (Exception e) { ; }
@@ -318,7 +318,7 @@ public class UcsfReader {
 			info.fileType = fileType;
 			info.dimCount = dis.readByte() & 0xff;
 			info.componentCount = dis.readByte() & 0xff;
-			info.encoding = dis.readByte();
+			info.encoding = dis.readByte() & 0xff;
 			info.fileVersion = dis.readByte() & 0xff;
 			if (info.fileVersion != 2)
 				System.out.println("Unexpected file version "+info.fileVersion);
@@ -326,25 +326,10 @@ public class UcsfReader {
 			info.date = string(dis.readNBytes(26));
 			info.comment = string(dis.readNBytes(80));
 			dis.readNBytes(51);
-			
-			if (info.dimCount > 0) {
+
+			for (int i = 0; i < info.dimCount; i++) {
 				
-				info.axisHeaders[0] = readAxisHeader(dis);
-			}
-			
-			if (info.dimCount > 1) {
-			
-				info.axisHeaders[1] = readAxisHeader(dis);
-			}
-			
-			if (info.dimCount > 2) {
-			
-				info.axisHeaders[2] = readAxisHeader(dis);
-			}
-			
-			if (info.dimCount > 3) {
-			
-				info.axisHeaders[3] = readAxisHeader(dis);
+				info.axisHeaders[i] = readAxisHeader(dis);
 			}
 			
 			return info;
@@ -390,47 +375,64 @@ public class UcsfReader {
 		int yDim = 0;
 		int zDim = 0;
 		int aDim = 0;
+
+		int xPos = xPos(info);
+		int yPos = yPos(info);
+		int zPos = zPos(info);
+		int aPos = aPos(info);
 		
-		if (info.dimCount > 0) {
+		if (xPos >= 0) {
 			
-			xDim = info.axisHeaders[0].dataPtCount;
+			xDim = info.axisHeaders[xPos].dataPtCount;
 		}
 		
-		if (info.dimCount > 1) {
+		if (yPos >= 0) {
 			
-			yDim = info.axisHeaders[1].dataPtCount;
+			yDim = info.axisHeaders[yPos].dataPtCount;
 		}
 		
-		if (info.dimCount > 2) {
+		if (zPos >= 0) {
 			
-			zDim = info.axisHeaders[2].dataPtCount;
+			zDim = info.axisHeaders[zPos].dataPtCount;
 		}
 		
-		if (info.dimCount > 3) {
+		if (aPos >= 0) {
 			
-			aDim = info.axisHeaders[3].dataPtCount;
+			aDim = info.axisHeaders[aPos].dataPtCount;
 		}
 				
-		// TODO do I need to reverse the order of all these dims?
-		
 		if (xDim > 0 && yDim > 0 && zDim > 0 && aDim > 0) {
 			
-			return new long[] {xDim, yDim, zDim, aDim};
+			long[] dims = new long[4];
+			dims[xPos] = xDim;
+			dims[yPos] = yDim;
+			dims[zPos] = zDim;
+			dims[aPos] = aDim;
+			return dims;
 		}
 
 		if (xDim > 0 && yDim > 0 && zDim > 0) {
 			
-			return new long[] {xDim, yDim, zDim};
+			long[] dims = new long[3];
+			dims[xPos] = xDim;
+			dims[yPos] = yDim;
+			dims[zPos] = zDim;
+			return dims;
 		}
 		
 		if (xDim > 0 && yDim > 0) {
 			
-			return new long[] {xDim, yDim};
+			long[] dims = new long[2];
+			dims[xPos] = xDim;
+			dims[yPos] = yDim;
+			return dims;
 		}
 		
 		if (xDim > 0) {
 			
-			return new long[] {xDim};
+			long[] dims = new long[2];
+			dims[xPos] = xDim;
+			return dims;
 		}
 		
 		return new long[] {};
@@ -451,51 +453,63 @@ public class UcsfReader {
 	{
 		// read pixel data using header info
 
-		int numD = info.dimCount;
-		
-		int xTileCount = 0;
+		int xTileCount = 1;
 		int yTileCount = 1;
 		int zTileCount = 1;
 		int aTileCount = 1;
 
-		int xTileSize = 0;
+		int xTileSize = 1;
 		int yTileSize = 1;
 		int zTileSize = 1;
 		int aTileSize = 1;
 
-		if (numD < 0 || numD > 4) {
+		int xPos = xPos(info);
+		int yPos = yPos(info);
+		int zPos = zPos(info);
+		int aPos = aPos(info);
+		
+		if (info.dimCount <= 0 || info.dimCount > 4) {
 				
-			throw new IllegalArgumentException("Unexpected number of dimensions ("+numD+")");
+			throw new IllegalArgumentException("Unexpected number of dimensions ("+info.dimCount+")");
 		}
 
-		else if (numD == 0) {
+		if (xPos >= 0) {
 			
-			// no initialization needed: already done
+			yTileCount = info.axisHeaders[xPos].tileCount;
+			yTileSize = info.axisHeaders[xPos].tileSize;
 		}
 
-		if (numD > 0) {
+		if (yPos >= 0) {
 			
-			xTileCount = info.axisHeaders[0].tileCount;
-			xTileSize = info.axisHeaders[0].tileSize;
+			xTileCount = info.axisHeaders[yPos].tileCount;
+			xTileSize = info.axisHeaders[yPos].tileSize;
 		}
+
+		if (zPos >= 0) {
+			
+			zTileCount = info.axisHeaders[zPos].tileCount;
+			zTileSize = info.axisHeaders[zPos].tileSize;
+		}
+
+		if (aPos >= 0) {
+			
+			aTileCount = info.axisHeaders[aPos].tileCount;
+			aTileSize = info.axisHeaders[aPos].tileSize;
+		}
+
+		System.out.println("x tile size " + xTileSize);
+		System.out.println("y tile size " + yTileSize);
+		System.out.println("z tile size " + zTileSize);
+		System.out.println("a tile size " + aTileSize);
 		
-		if (numD > 1) {
-			
-			yTileCount = info.axisHeaders[1].tileCount;
-			yTileSize = info.axisHeaders[1].tileSize;
-		}
-		
-		if (numD > 2) {
-			
-			zTileCount = info.axisHeaders[2].tileCount;
-			zTileSize = info.axisHeaders[2].tileSize;
-		}
-		
-		if (numD > 3) {
-			
-			aTileCount = info.axisHeaders[3].tileCount;
-			aTileSize = info.axisHeaders[3].tileSize;
-		}
+		if (info.dimCount > 0)
+			System.out.println("0 axis info " + info.axisHeaders[0].tileSize);
+		if (info.dimCount > 1)
+			System.out.println("1 axis info " + info.axisHeaders[1].tileSize);
+		if (info.dimCount > 2)
+			System.out.println("2 axis info " + info.axisHeaders[2].tileSize);
+		if (info.dimCount > 3)
+			System.out.println("3 axis info " + info.axisHeaders[3].tileSize);
 
 		U value = alg.construct();
 		
@@ -503,7 +517,7 @@ public class UcsfReader {
 
 		float[] numbers = new float[info.componentCount * xTileSize * yTileSize * zTileSize * aTileSize];
 		
-		IntegerIndex pos = new IntegerIndex(numD);
+		IntegerIndex pos = new IntegerIndex(info.dimCount);
 		
 		// walk all the tiles
 		
@@ -553,19 +567,19 @@ public class UcsfReader {
 										
 										boolean inBounds = true;
 										
-										if (info.dimCount > 0 && x >= info.axisHeaders[0].dataPtCount)
+										if (xPos >= 0 && x >= info.axisHeaders[xPos].dataPtCount)
 											
 											inBounds = false;
 										
-										else if (info.dimCount > 1 && y >= info.axisHeaders[1].dataPtCount)
+										if (yPos >= 0  && y >= info.axisHeaders[yPos].dataPtCount)
 											
 											inBounds = false;
 										
-										else if (info.dimCount > 2 && z >= info.axisHeaders[2].dataPtCount)
+										if (zPos >= 0  && z >= info.axisHeaders[zPos].dataPtCount)
 											
 											inBounds = false;
 										
-										else if (info.dimCount > 3 && a >= info.axisHeaders[3].dataPtCount)
+										if (aPos >= 0  && a >= info.axisHeaders[aPos].dataPtCount)
 										
 											inBounds = false;
 										
@@ -574,27 +588,37 @@ public class UcsfReader {
 											// we have a good coordinate
 											
 											// set the position of the coordinate
-											
-											if (info.dimCount > 0) {
+
+											if (xPos >= 0) {
 												
-												pos.set(0, x);
+												if (xPos == 1)
+													pos.set(xPos, info.axisHeaders[xPos].dataPtCount - x - 1);
+												else
+													pos.set(xPos, x);
 											}
 											
-											if (info.dimCount > 1) {
+											if (yPos >= 0) {
 												
-												// SWAP y to match zorbage conventions
-												
-												pos.set(1, info.axisHeaders[1].dataPtCount - y - 1);
+												if (yPos == 1)
+													pos.set(yPos, info.axisHeaders[yPos].dataPtCount - y - 1);
+												else
+													pos.set(yPos, y);
 											}
 											
-											if (info.dimCount > 2) {
+											if (zPos >= 0) {
 												
-												pos.set(2, z);
+												if (zPos == 1)
+													pos.set(zPos, info.axisHeaders[zPos].dataPtCount - z - 1);
+												else
+													pos.set(zPos, z);
 											}
 											
-											if (info.dimCount > 3) {
+											if (aPos >= 0) {
 												
-												pos.set(3, a);
+												if (aPos == 1)
+													pos.set(aPos, info.axisHeaders[aPos].dataPtCount - a - 1);
+												else
+													pos.set(aPos, a);
 											}
 											
 											// gather the component values from the tile
@@ -627,6 +651,34 @@ public class UcsfReader {
 		}
 	}
 
+	private static
+	
+		int xPos(HeaderInfo info)
+	{
+		return info.dimCount - 1;
+	}
+
+	private static
+	
+		int yPos(HeaderInfo info)
+	{
+		return info.dimCount - 2;
+	}
+
+	private static
+	
+		int zPos(HeaderInfo info)
+	{
+		return info.dimCount - 3;
+	}
+
+	private static
+	
+		int aPos(HeaderInfo info)
+	{
+		return info.dimCount - 4;
+	}
+	
 	private static
 	
 		MetaDataStore
