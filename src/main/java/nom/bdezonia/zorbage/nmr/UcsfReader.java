@@ -265,28 +265,28 @@ public class UcsfReader {
 		
 		if (xPos >= 0) {
 			
-			data.setAxisType(xPos, info.axisHeaders[xPos].atomName);
+			data.setAxisType(xPos, info.axisHeaders[0].atomName);
 			
 			data.setAxisUnit(xPos, "ppm");
 		}
 
 		if (yPos >= 0) {
 			
-			data.setAxisType(yPos, info.axisHeaders[yPos].atomName);
+			data.setAxisType(yPos, info.axisHeaders[1].atomName);
 			
 			data.setAxisUnit(yPos, "ppm");
 		}
 
 		if (zPos >= 0) {
 			
-			data.setAxisType(zPos, info.axisHeaders[zPos].atomName);
+			data.setAxisType(zPos, info.axisHeaders[2].atomName);
 			
 			data.setAxisUnit(zPos, "ppm");
 		}
 
 		if (aPos >= 0) {
 			
-			data.setAxisType(aPos, info.axisHeaders[aPos].atomName);
+			data.setAxisType(aPos, info.axisHeaders[3].atomName);
 			
 			data.setAxisUnit(aPos, "ppm");
 		}
@@ -327,6 +327,9 @@ public class UcsfReader {
 			info.comment = string(dis.readNBytes(80));
 			dis.readNBytes(51);
 
+			// NOTE: It seems that axis headers are always defined as:
+			//   X then Y then Z then A
+			
 			for (int i = 0; i < info.dimCount; i++) {
 				
 				info.axisHeaders[i] = readAxisHeader(dis);
@@ -383,22 +386,22 @@ public class UcsfReader {
 		
 		if (xPos >= 0) {
 			
-			xDim = info.axisHeaders[xPos].dataPtCount;
+			xDim = info.axisHeaders[0].dataPtCount;
 		}
 		
 		if (yPos >= 0) {
 			
-			yDim = info.axisHeaders[yPos].dataPtCount;
+			yDim = info.axisHeaders[1].dataPtCount;
 		}
 		
 		if (zPos >= 0) {
 			
-			zDim = info.axisHeaders[zPos].dataPtCount;
+			zDim = info.axisHeaders[2].dataPtCount;
 		}
 		
 		if (aPos >= 0) {
 			
-			aDim = info.axisHeaders[aPos].dataPtCount;
+			aDim = info.axisHeaders[3].dataPtCount;
 		}
 				
 		if (xDim > 0 && yDim > 0 && zDim > 0 && aDim > 0) {
@@ -475,41 +478,27 @@ public class UcsfReader {
 
 		if (xPos >= 0) {
 			
-			yTileCount = info.axisHeaders[xPos].tileCount;
-			yTileSize = info.axisHeaders[xPos].tileSize;
+			yTileCount = info.axisHeaders[0].tileCount;
+			yTileSize = info.axisHeaders[0].tileSize;
 		}
 
 		if (yPos >= 0) {
 			
-			xTileCount = info.axisHeaders[yPos].tileCount;
-			xTileSize = info.axisHeaders[yPos].tileSize;
+			xTileCount = info.axisHeaders[1].tileCount;
+			xTileSize = info.axisHeaders[1].tileSize;
 		}
 
 		if (zPos >= 0) {
 			
-			zTileCount = info.axisHeaders[zPos].tileCount;
-			zTileSize = info.axisHeaders[zPos].tileSize;
+			zTileCount = info.axisHeaders[2].tileCount;
+			zTileSize = info.axisHeaders[2].tileSize;
 		}
 
 		if (aPos >= 0) {
 			
-			aTileCount = info.axisHeaders[aPos].tileCount;
-			aTileSize = info.axisHeaders[aPos].tileSize;
+			aTileCount = info.axisHeaders[3].tileCount;
+			aTileSize = info.axisHeaders[3].tileSize;
 		}
-
-		System.out.println("x tile size " + xTileSize);
-		System.out.println("y tile size " + yTileSize);
-		System.out.println("z tile size " + zTileSize);
-		System.out.println("a tile size " + aTileSize);
-		
-		if (info.dimCount > 0)
-			System.out.println("0 axis info " + info.axisHeaders[0].tileSize);
-		if (info.dimCount > 1)
-			System.out.println("1 axis info " + info.axisHeaders[1].tileSize);
-		if (info.dimCount > 2)
-			System.out.println("2 axis info " + info.axisHeaders[2].tileSize);
-		if (info.dimCount > 3)
-			System.out.println("3 axis info " + info.axisHeaders[3].tileSize);
 
 		U value = alg.construct();
 		
@@ -567,19 +556,19 @@ public class UcsfReader {
 										
 										boolean inBounds = true;
 										
-										if (xPos >= 0 && x >= info.axisHeaders[xPos].dataPtCount)
+										if (xPos >= 0 && x >= info.axisHeaders[0].dataPtCount)
 											
 											inBounds = false;
 										
-										if (yPos >= 0  && y >= info.axisHeaders[yPos].dataPtCount)
+										if (yPos >= 0  && y >= info.axisHeaders[1].dataPtCount)
 											
 											inBounds = false;
 										
-										if (zPos >= 0  && z >= info.axisHeaders[zPos].dataPtCount)
+										if (zPos >= 0  && z >= info.axisHeaders[2].dataPtCount)
 											
 											inBounds = false;
 										
-										if (aPos >= 0  && a >= info.axisHeaders[aPos].dataPtCount)
+										if (aPos >= 0  && a >= info.axisHeaders[3].dataPtCount)
 										
 											inBounds = false;
 										
@@ -592,7 +581,7 @@ public class UcsfReader {
 											if (xPos >= 0) {
 												
 												if (xPos == 1)
-													pos.set(xPos, info.axisHeaders[xPos].dataPtCount - x - 1);
+													pos.set(xPos, info.axisHeaders[0].dataPtCount - x - 1);
 												else
 													pos.set(xPos, x);
 											}
@@ -600,7 +589,7 @@ public class UcsfReader {
 											if (yPos >= 0) {
 												
 												if (yPos == 1)
-													pos.set(yPos, info.axisHeaders[yPos].dataPtCount - y - 1);
+													pos.set(yPos, info.axisHeaders[1].dataPtCount - y - 1);
 												else
 													pos.set(yPos, y);
 											}
@@ -608,7 +597,7 @@ public class UcsfReader {
 											if (zPos >= 0) {
 												
 												if (zPos == 1)
-													pos.set(zPos, info.axisHeaders[zPos].dataPtCount - z - 1);
+													pos.set(zPos, info.axisHeaders[2].dataPtCount - z - 1);
 												else
 													pos.set(zPos, z);
 											}
@@ -616,7 +605,7 @@ public class UcsfReader {
 											if (aPos >= 0) {
 												
 												if (aPos == 1)
-													pos.set(aPos, info.axisHeaders[aPos].dataPtCount - a - 1);
+													pos.set(aPos, info.axisHeaders[3].dataPtCount - a - 1);
 												else
 													pos.set(aPos, a);
 											}
