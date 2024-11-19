@@ -438,7 +438,7 @@ public class UcsfReader {
 		
 		if (xDim > 0) {
 			
-			long[] dims = new long[2];
+			long[] dims = new long[1];
 			dims[xPos] = xDim;
 			return dims;
 		}
