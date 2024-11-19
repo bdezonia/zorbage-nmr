@@ -780,6 +780,9 @@ public class UcsfReader {
 			return data.numDimensions();
 		}
 
+		// The equations here were cobbled together from nmrfam-sparky
+		//   code and nmrglue code and some trial and error debugging.
+		
 		@Override
 		public BigDecimal project(long[] coord, int axis) {
 			
@@ -800,6 +803,9 @@ public class UcsfReader {
 			return car.add(first).add(delta.multiply(BigDecimal.valueOf(v)));
 		}
 
+		// The equations here were cobbled together from nmrfam-sparky
+		//   code and nmrglue code and some trial and error debugging.
+		
 		@Override
 		public BigDecimal project(IntegerIndex coord, int axis) {
 			
