@@ -28,6 +28,8 @@ import java.io.DataInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigDecimal;
+import java.math.MathContext;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -36,6 +38,7 @@ import nom.bdezonia.zorbage.algebra.Algebra;
 import nom.bdezonia.zorbage.algebra.Allocatable;
 import nom.bdezonia.zorbage.algebra.G;
 import nom.bdezonia.zorbage.algebra.SetFromFloats;
+import nom.bdezonia.zorbage.coordinates.CoordinateSpace;
 import nom.bdezonia.zorbage.data.DimensionedDataSource;
 import nom.bdezonia.zorbage.data.DimensionedStorage;
 import nom.bdezonia.zorbage.metadata.MetaDataStore;
@@ -241,6 +244,8 @@ public class UcsfReader {
 		try {
 		
 			readNumbers(dis, info, alg, data);
+			
+			dis.close();
 
 		} catch (IOException e3) {
 
@@ -250,7 +255,7 @@ public class UcsfReader {
 			
 			return null;
 		}
-		
+
 		MetaDataStore metadata = metadataFromHeader(info);
 		
 		if (metadata != null)
@@ -262,7 +267,9 @@ public class UcsfReader {
 		data.setValueType("Amplitude");
 
 		data.setValueUnit("");
-
+		
+		data.setCoordinateSpace(new UcsfSpace(data));
+		
 		int xPos = xPos(info);
 		int yPos = yPos(info);
 		int zPos = zPos(info);
@@ -295,8 +302,6 @@ public class UcsfReader {
 			
 			data.setAxisUnit(aPos, "ppm");
 		}
-
-		try { dis.close(); } catch (Exception e) { ; }
 		
 		return new Tuple2<>(alg, data);
 	}
@@ -751,5 +756,92 @@ public class UcsfReader {
 		}
 		
 		return result.toString();
+	}
+
+	private static class UcsfSpace implements CoordinateSpace {
+
+		private final DimensionedDataSource<?> data;
+		
+		private MathContext context;
+		
+		UcsfSpace(DimensionedDataSource<?> data) {
+			
+			if (data.numDimensions() > 4)
+				throw new IllegalArgumentException("UcsfSpace must be 4 dimensions or fewer");
+			
+			this.data = data;
+			
+			this.context = new MathContext(5);
+		}
+
+		@Override
+		public int numDimensions() {
+
+			return data.numDimensions();
+		}
+
+		@Override
+		public BigDecimal project(long[] coord, int axis) {
+			
+			if (axis < 0 || axis >= data.numDimensions())
+				throw new IllegalArgumentException("project() given mismatched dimensionalities");
+
+			BigDecimal sw = new BigDecimal(data.metadata().getString(ordinal(axis)+" axis spectral width (Hz)"));
+			BigDecimal obs = new BigDecimal(data.metadata().getString(ordinal(axis)+" axis spectrometer frequency (MHz)"));
+			BigDecimal car = new BigDecimal(data.metadata().getString(ordinal(axis)+" axis transmitter offset (ppm)"));
+			BigDecimal size = BigDecimal.valueOf(data.dimension(axis));
+			BigDecimal delta = sw.negate().divide(size.multiply(obs), context);
+			BigDecimal first = car.divide(obs, context).subtract(delta.multiply(size).divide(BigDecimal.valueOf(2), context));
+			final long v;
+			if (axis == 1)
+				v = data.dimension(1) - 1 - coord[1];
+			else
+				v = coord[axis];
+			return car.add(first).add(delta.multiply(BigDecimal.valueOf(v)));
+		}
+
+		@Override
+		public BigDecimal project(IntegerIndex coord, int axis) {
+			
+			if (axis < 0 || axis >= data.numDimensions())
+				throw new IllegalArgumentException("project() given mismatched dimensionalities");
+
+			BigDecimal sw = new BigDecimal(data.metadata().getString(ordinal(axis)+" axis spectral width (Hz)"));
+			BigDecimal obs = new BigDecimal(data.metadata().getString(ordinal(axis)+" axis spectrometer frequency (MHz)"));
+			BigDecimal car = new BigDecimal(data.metadata().getString(ordinal(axis)+" axis transmitter offset (ppm)"));
+			BigDecimal size = BigDecimal.valueOf(data.dimension(axis));
+			BigDecimal delta = sw.negate().divide(size.multiply(obs), context);
+			BigDecimal first = car.divide(obs, context).subtract(delta.multiply(size).divide(BigDecimal.valueOf(2), context));
+			final long v;
+			if (axis == 1)
+				v = data.dimension(1) - 1 - coord.get(1);
+			else
+				v = coord.get(axis);
+			return car.add(first).add(delta.multiply(BigDecimal.valueOf(v)));
+		}
+
+		@Override
+		public void project(long[] coord, BigDecimal[] output) {
+
+			for (int i = 0; i < coord.length; i++) {
+				
+				output[i] = project(coord, i);
+			}
+		}
+
+		@Override
+		public void project(IntegerIndex coord, BigDecimal[] output) {
+
+			for (int i = 0; i < coord.numDimensions(); i++) {
+				
+				output[i] = project(coord, i);
+			}
+		}
+
+		@Override
+		public void setPrecision(int decimalPlaces) {
+
+			this.context = new MathContext(decimalPlaces);
+		}
 	}
 }
