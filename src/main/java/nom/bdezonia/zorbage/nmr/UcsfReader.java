@@ -782,48 +782,50 @@ public class UcsfReader {
 
 		// The equations here were cobbled together from nmrfam-sparky
 		//   code and nmrglue code and some trial and error debugging.
-		
+
+		// They may be inaccurate. Very similar .ft2 and .ucsf data
+		//   files show slight differences.
+
+		private BigDecimal project(long pos, int axis) {
+			
+			BigDecimal sw = new BigDecimal(data.metadata().getString(ordinal(axis)+" axis spectral width (Hz)"));
+			BigDecimal obs = new BigDecimal(data.metadata().getString(ordinal(axis)+" axis spectrometer frequency (MHz)"));
+			BigDecimal car = new BigDecimal(data.metadata().getString(ordinal(axis)+" axis transmitter offset (ppm)"));
+			BigDecimal size = BigDecimal.valueOf(data.dimension(axis));
+			BigDecimal delta = sw.negate().divide(size.multiply(obs), context);
+			BigDecimal first = car.divide(obs, context).subtract(delta.multiply(size).divide(BigDecimal.valueOf(2), context));
+
+			return car.add(first).add(delta.multiply(BigDecimal.valueOf(pos)));
+		}
+
 		@Override
 		public BigDecimal project(long[] coord, int axis) {
 			
 			if (axis < 0 || axis >= data.numDimensions())
 				throw new IllegalArgumentException("project() given mismatched dimensionalities");
 
-			BigDecimal sw = new BigDecimal(data.metadata().getString(ordinal(axis)+" axis spectral width (Hz)"));
-			BigDecimal obs = new BigDecimal(data.metadata().getString(ordinal(axis)+" axis spectrometer frequency (MHz)"));
-			BigDecimal car = new BigDecimal(data.metadata().getString(ordinal(axis)+" axis transmitter offset (ppm)"));
-			BigDecimal size = BigDecimal.valueOf(data.dimension(axis));
-			BigDecimal delta = sw.negate().divide(size.multiply(obs), context);
-			BigDecimal first = car.divide(obs, context).subtract(delta.multiply(size).divide(BigDecimal.valueOf(2), context));
-			final long v;
+			final long pos;
 			if (axis == 1)
-				v = data.dimension(1) - 1 - coord[1];
+				pos = data.dimension(1) - 1 - coord[1];
 			else
-				v = coord[axis];
-			return car.add(first).add(delta.multiply(BigDecimal.valueOf(v)));
+				pos = coord[axis];
+			
+			return project(pos, axis);
 		}
 
-		// The equations here were cobbled together from nmrfam-sparky
-		//   code and nmrglue code and some trial and error debugging.
-		
 		@Override
 		public BigDecimal project(IntegerIndex coord, int axis) {
 			
 			if (axis < 0 || axis >= data.numDimensions())
 				throw new IllegalArgumentException("project() given mismatched dimensionalities");
 
-			BigDecimal sw = new BigDecimal(data.metadata().getString(ordinal(axis)+" axis spectral width (Hz)"));
-			BigDecimal obs = new BigDecimal(data.metadata().getString(ordinal(axis)+" axis spectrometer frequency (MHz)"));
-			BigDecimal car = new BigDecimal(data.metadata().getString(ordinal(axis)+" axis transmitter offset (ppm)"));
-			BigDecimal size = BigDecimal.valueOf(data.dimension(axis));
-			BigDecimal delta = sw.negate().divide(size.multiply(obs), context);
-			BigDecimal first = car.divide(obs, context).subtract(delta.multiply(size).divide(BigDecimal.valueOf(2), context));
-			final long v;
+			final long pos;
 			if (axis == 1)
-				v = data.dimension(1) - 1 - coord.get(1);
+				pos = data.dimension(1) - 1 - coord.get(1);
 			else
-				v = coord.get(axis);
-			return car.add(first).add(delta.multiply(BigDecimal.valueOf(v)));
+				pos = coord.get(axis);
+			
+			return project(pos, axis);
 		}
 
 		@Override

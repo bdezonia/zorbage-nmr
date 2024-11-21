@@ -239,21 +239,9 @@ public class NmrPipeReader {
 				data.set(i, type);
 			}
 
-			System.out.println();
-
-			System.out.println("raw floats read = " + numFloats);
-			
 			long[] dims = reader.findDims();
 			
-			System.out.println("raw dims = " + Arrays.toString(dims));
-			
 			Tuple2<String,Integer> dataType = reader.findDataType();
-			
-			System.out.println("data type will be = " + dataType.a());
-
-			System.out.println("data type has components = " + dataType.b());
-
-			System.out.println();
 			
 			MetaDataStore metadata = new MetaDataStore();
 
@@ -338,14 +326,6 @@ public class NmrPipeReader {
 		
 		setUnitsEtc(nd);
 		
-		System.out.println();
-		
-		System.out.println("final type is real");
-
-		System.out.println("final number of floats = " + numbers.size());
-		
-		System.out.println("final dims = " + Arrays.toString(rawDims));
-		
 		return nd;
 	}
 	
@@ -402,12 +382,6 @@ public class NmrPipeReader {
 			
 			long numY = rawDims.length == 1 ? 1 : dims[1];  // I'm extending to 2d
 			
-			System.out.println("floats = "+numbers.size());
-			
-			System.out.println("dims = "+Arrays.toString(dims));
-			
-			System.out.println("numY = "+numY);
-			
 			for (long y = 0; y < numY; y++) {
 
 				// read R values
@@ -458,14 +432,6 @@ public class NmrPipeReader {
 		flipAroundY(G.CFLT, nd);
 		
 		setUnitsEtc(nd);
-		
-		System.out.println();
-		
-		System.out.println("final type is complex");
-
-		System.out.println("final number of complexes = " + complexes.size());
-		
-		System.out.println("final dims = " + Arrays.toString(dims));
 		
 		return nd;
 	}
@@ -610,14 +576,6 @@ public class NmrPipeReader {
 		flipAroundY(G.QFLT, nd);
 		
 		setUnitsEtc(nd);
-		
-		System.out.println();
-		
-		System.out.println("final type is quaternion");
-
-		System.out.println("final number of quats = " + quats.size());
-		
-		System.out.println("final dims = " + Arrays.toString(dims));
 		
 		return nd;
 	}
@@ -1690,7 +1648,7 @@ public class NmrPipeReader {
 			
 			else {
 			
-				System.out.println("unit "+dimNumber+" read from header value of "+val);
+				System.out.println("unit "+dimNumber+" read from header has value of "+val);
 				
 				return "unknown";
 			}
@@ -2725,24 +2683,31 @@ public class NmrPipeReader {
 			return data.numDimensions();
 		}
 
+		private BigDecimal project(long pos, int axis) {
+			
+			BigDecimal orig = BigDecimal.valueOf(data.metadata().getFloat("dim "+axis+" offset"));
+			BigDecimal sw = BigDecimal.valueOf(data.metadata().getFloat("dim "+axis+" sweep width"));
+			BigDecimal obs = BigDecimal.valueOf(data.metadata().getFloat("dim "+axis+" obs freq"));
+			BigDecimal numer = BigDecimal.valueOf(data.dimension(axis) - pos);
+			BigDecimal denom = BigDecimal.valueOf(data.dimension(axis));
+			
+			return orig.add(sw.multiply(numer).divide(denom, context)).divide(obs, context);
+		}
+		
 		@Override
 		public BigDecimal project(long[] coord, int axis) {
 			
 			if (axis < 0 || axis >= data.numDimensions())
 				throw new IllegalArgumentException("project() given mismatched dimensionalities");
 
-			BigDecimal orig = BigDecimal.valueOf(data.metadata().getFloat("dim "+axis+" offset"));
-			BigDecimal sw = BigDecimal.valueOf(data.metadata().getFloat("dim "+axis+" sweep width"));
-			BigDecimal obs = BigDecimal.valueOf(data.metadata().getFloat("dim "+axis+" obs freq"));
-			final long v;
+			final long pos;
 			if (axis == 1)
-				v = data.dimension(1) - 1 - coord[1];
+				pos = data.dimension(1) - 1 - coord[1];
 			else
-				v = coord[axis];
-			final long u = v + 1;
-			BigDecimal numer = BigDecimal.valueOf(data.dimension(axis)-u);
-			BigDecimal denom = BigDecimal.valueOf(data.dimension(axis));
-			return orig.add(sw.multiply(numer).divide(denom, context)).divide(obs, context);
+				pos = coord[axis];
+			final long u = pos + 1;
+			
+			return project(u, axis);
 		}
 
 		@Override
@@ -2751,18 +2716,14 @@ public class NmrPipeReader {
 			if (axis < 0 || axis >= data.numDimensions())
 				throw new IllegalArgumentException("project() given mismatched dimensionalities");
 
-			BigDecimal orig = BigDecimal.valueOf(data.metadata().getFloat("dim "+axis+" offset"));
-			BigDecimal sw = BigDecimal.valueOf(data.metadata().getFloat("dim "+axis+" sweep width"));
-			BigDecimal obs = BigDecimal.valueOf(data.metadata().getFloat("dim "+axis+" obs freq"));
-			final long v;
+			final long pos;
 			if (axis == 1)
-				v = data.dimension(1) - 1 - coord.get(1);
+				pos = data.dimension(1) - 1 - coord.get(1);
 			else
-				v = coord.get(axis);
-			final long u = v + 1;
-			BigDecimal numer = BigDecimal.valueOf(data.dimension(axis)-u);
-			BigDecimal denom = BigDecimal.valueOf(data.dimension(axis));
-			return orig.add(sw.multiply(numer).divide(denom, context)).divide(obs, context);
+				pos = coord.get(axis);
+			final long u = pos + 1;
+			
+			return project(u, axis);
 		}
 
 		@Override
