@@ -32,7 +32,6 @@ import java.math.BigDecimal;
 import java.math.MathContext;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Arrays;
 
 import nom.bdezonia.zorbage.algebra.Algebra;
 import nom.bdezonia.zorbage.algebra.G;
