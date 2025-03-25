@@ -226,7 +226,7 @@ public class NmrPipeReader {
 			NmrPipeFileReader reader = new NmrPipeFileReader();
 
 			reader.readHeader(dis);
-
+			
 			Float32Member type = G.FLT.construct();
 			
 			for (long i = 0; i < numFloats; i++) {
@@ -1090,7 +1090,11 @@ public class NmrPipeReader {
 		 * 
 		 * @return
 		 */
-		float apodizationDDF() { // should this be an int?
+
+		// TODO should this be an int? nmrglue only every sets it to
+		//   an int. I haven't found any code that reads it.
+		
+		float apodizationDF() {
 			
 			return getHeaderFloat(FDF2APODDF);
 		}
@@ -1778,7 +1782,7 @@ public class NmrPipeReader {
 		 * @param dimNumber
 		 * @return
 		 */
-		float ftSize(int dimNumber) {  // TODO: is this an int instead of a float?
+		float ftSize(int dimNumber) {
 
 			int dimIndex = dimIndex(dimNumber);
 			
@@ -1808,7 +1812,7 @@ public class NmrPipeReader {
 		 * @param dimNumber
 		 * @return
 		 */
-		float tdSize(int dimNumber) {  // TODO: is this an int instead of a float?
+		float tdSize(int dimNumber) {
 
 			int dimIndex = dimIndex(dimNumber);
 			
@@ -1958,7 +1962,7 @@ public class NmrPipeReader {
 		 * @param dimNumber
 		 * @return
 		 */
-		float negOfZeroFillSize(int dimNumber) {  // TODO: is this an INT instead of a FLOAT?
+		float negOfZeroFillSize(int dimNumber) {
 
 			int dimIndex = dimIndex(dimNumber);
 			
@@ -1988,29 +1992,29 @@ public class NmrPipeReader {
 		 * @param dimNumber
 		 * @return
 		 */
-		int apodization(int dimNumber) {  // TODO: should this be a float
+		float apodization(int dimNumber) {
 
 			int dimIndex = dimIndex(dimNumber);
 			
 			if (dimIndex == 1)
 
-				return getHeaderInt(FDF1APOD);
+				return getHeaderFloat(FDF1APOD);
 			
 			else if (dimIndex == 2)
 
-				return getHeaderInt(FDF2APOD);
+				return getHeaderFloat(FDF2APOD);
 			
 			else if (dimIndex == 3)
 
-				return getHeaderInt(FDF3APOD);
+				return getHeaderFloat(FDF3APOD);
 			
 			else if (dimIndex == 4)
 
-				return getHeaderInt(FDF4APOD);
+				return getHeaderFloat(FDF4APOD);
 			
 			else
 				
-				return Integer.MIN_VALUE;
+				return -Float.MAX_VALUE;
 		}
 
 		/**
@@ -2381,7 +2385,10 @@ public class NmrPipeReader {
 		 * @param dimNumber
 		 * @return
 		 */
-		float aqSign(int dimNumber) {  // TODO: should this be an int?
+		
+		// TODO: should this be an int? can't determine from nmrglue it nmrdraw fdatap.h file
+		
+		float aqSign(int dimNumber) {
 
 			int dimIndex = dimIndex(dimNumber);
 			
@@ -2411,7 +2418,7 @@ public class NmrPipeReader {
 		 * @param dimNumber
 		 * @return
 		 */
-		float c1(int dimNumber) {  // TODO: should this be an int?
+		float c1(int dimNumber) {
 
 			int dimIndex = dimIndex(dimNumber);
 			
