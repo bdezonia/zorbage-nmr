@@ -1090,10 +1090,6 @@ public class NmrPipeReader {
 		 * 
 		 * @return
 		 */
-
-		// TODO should this be an int? nmrglue only every sets it to
-		//   an int. I haven't found any code that reads it.
-		
 		float apodizationDF() {
 			
 			return getHeaderFloat(FDF2APODDF);
@@ -2388,29 +2384,29 @@ public class NmrPipeReader {
 		
 		// TODO: should this be an int? can't determine from nmrglue it nmrdraw fdatap.h file
 		
-		float aqSign(int dimNumber) {
+		int aqSign(int dimNumber) {
 
 			int dimIndex = dimIndex(dimNumber);
 			
 			if (dimIndex == 1)
 
-				return getHeaderFloat(FDF1AQSIGN);
+				return (int) getHeaderFloat(FDF1AQSIGN);
 			
 			else if (dimIndex == 2)
 
-				return getHeaderFloat(FDF2AQSIGN);
+				return (int) getHeaderFloat(FDF2AQSIGN);
 			
 			else if (dimIndex == 3)
 
-				return getHeaderFloat(FDF3AQSIGN);
+				return (int) getHeaderFloat(FDF3AQSIGN);
 			
 			else if (dimIndex == 4)
 
-				return getHeaderFloat(FDF4AQSIGN);
+				return (int) getHeaderFloat(FDF4AQSIGN);
 			
 			else
 				
-				return Float.NaN;
+				return 0;
 		}
 
 		/**
