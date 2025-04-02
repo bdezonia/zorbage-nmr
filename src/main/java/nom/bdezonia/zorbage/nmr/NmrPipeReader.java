@@ -1603,7 +1603,7 @@ public class NmrPipeReader {
 			
 			else
 				
-				return "unknown";
+				throw new IllegalArgumentException("DIM NUMBER IS OUT OF BOUNDS "+dimNumber);
 		}
 
 		/**
@@ -1635,7 +1635,7 @@ public class NmrPipeReader {
 			
 			else
 				
-				return "illegal dimIndex";
+				throw new IllegalArgumentException("DIM NUMBER IS OUT OF BOUNDS "+dimNumber);
 
 			if (val == 0)  // time
 				
@@ -1680,7 +1680,7 @@ public class NmrPipeReader {
 			
 			else
 				
-				return Float.NaN;
+				throw new IllegalArgumentException("DIM NUMBER IS OUT OF BOUNDS "+dimNumber);
 		}
 		
 		/**
@@ -1710,7 +1710,7 @@ public class NmrPipeReader {
 			
 			else
 				
-				return Float.NaN;
+				throw new IllegalArgumentException("DIM NUMBER IS OUT OF BOUNDS "+dimNumber);
 		}
 		
 		/**
@@ -1740,7 +1740,7 @@ public class NmrPipeReader {
 			
 			else
 				
-				return Float.NaN;
+				throw new IllegalArgumentException("DIM NUMBER IS OUT OF BOUNDS "+dimNumber);
 		}
 
 		/**
@@ -1770,7 +1770,7 @@ public class NmrPipeReader {
 			
 			else
 				
-				return Float.NaN;
+				throw new IllegalArgumentException("DIM NUMBER IS OUT OF BOUNDS "+dimNumber);
 		}
 
 		/**
@@ -1800,7 +1800,7 @@ public class NmrPipeReader {
 			
 			else
 				
-				return Float.NaN;
+				throw new IllegalArgumentException("DIM NUMBER IS OUT OF BOUNDS "+dimNumber);
 		}
 
 		/**
@@ -1830,7 +1830,7 @@ public class NmrPipeReader {
 			
 			else
 				
-				return Float.NaN;
+				throw new IllegalArgumentException("DIM NUMBER IS OUT OF BOUNDS "+dimNumber);
 		}
 
 		/**
@@ -1860,7 +1860,7 @@ public class NmrPipeReader {
 			
 			else
 				
-				return Float.NaN;
+				throw new IllegalArgumentException("DIM NUMBER IS OUT OF BOUNDS "+dimNumber);
 		}
 
 		/**
@@ -1890,7 +1890,7 @@ public class NmrPipeReader {
 			
 			else
 				
-				return Float.NaN;
+				throw new IllegalArgumentException("DIM NUMBER IS OUT OF BOUNDS "+dimNumber);
 		}
 
 		/**
@@ -1920,7 +1920,7 @@ public class NmrPipeReader {
 			
 			else
 				
-				return Float.NaN;
+				throw new IllegalArgumentException("DIM NUMBER IS OUT OF BOUNDS "+dimNumber);
 		}
 
 		/**
@@ -1950,7 +1950,7 @@ public class NmrPipeReader {
 			
 			else
 				
-				return Float.NaN;
+				throw new IllegalArgumentException("DIM NUMBER IS OUT OF BOUNDS "+dimNumber);
 		}
 
 		/**
@@ -1980,7 +1980,7 @@ public class NmrPipeReader {
 			
 			else
 				
-				return Float.NaN;
+				throw new IllegalArgumentException("DIM NUMBER IS OUT OF BOUNDS "+dimNumber);
 		}
 
 		/**
@@ -2010,7 +2010,7 @@ public class NmrPipeReader {
 			
 			else
 				
-				return -Float.MAX_VALUE;
+				throw new IllegalArgumentException("DIM NUMBER IS OUT OF BOUNDS "+dimNumber);
 		}
 
 		/**
@@ -2040,7 +2040,7 @@ public class NmrPipeReader {
 			
 			else
 				
-				return Integer.MIN_VALUE;
+				throw new IllegalArgumentException("DIM NUMBER IS OUT OF BOUNDS "+dimNumber);
 		}
 
 		/**
@@ -2070,7 +2070,7 @@ public class NmrPipeReader {
 			
 			else
 				
-				return Float.NaN;
+				throw new IllegalArgumentException("DIM NUMBER IS OUT OF BOUNDS "+dimNumber);
 		}
 
 		/**
@@ -2100,7 +2100,7 @@ public class NmrPipeReader {
 			
 			else
 				
-				return Float.NaN;
+				throw new IllegalArgumentException("DIM NUMBER IS OUT OF BOUNDS "+dimNumber);
 		}
 
 		/**
@@ -2130,7 +2130,7 @@ public class NmrPipeReader {
 			
 			else
 				
-				return Float.NaN;
+				throw new IllegalArgumentException("DIM NUMBER IS OUT OF BOUNDS "+dimNumber);
 		}
 		
 		/**
@@ -2160,7 +2160,7 @@ public class NmrPipeReader {
 			
 			else
 				
-				return Float.NaN;
+				throw new IllegalArgumentException("DIM NUMBER IS OUT OF BOUNDS "+dimNumber);
 		}
 
 		/**
@@ -2190,7 +2190,7 @@ public class NmrPipeReader {
 			
 			else
 				
-				return Float.NaN;
+				throw new IllegalArgumentException("DIM NUMBER IS OUT OF BOUNDS "+dimNumber);
 		}
 
 		/**
@@ -2220,7 +2220,7 @@ public class NmrPipeReader {
 			
 			else
 				
-				return Float.NaN;
+				throw new IllegalArgumentException("DIM NUMBER IS OUT OF BOUNDS "+dimNumber);
 		}
 
 		/**
@@ -2250,7 +2250,7 @@ public class NmrPipeReader {
 			
 			else
 				
-				return Float.NaN;
+				throw new IllegalArgumentException("DIM NUMBER IS OUT OF BOUNDS "+dimNumber);
 		}
 
 		/**
@@ -2283,7 +2283,7 @@ public class NmrPipeReader {
 			
 			else
 				
-				return 0;
+				throw new IllegalArgumentException("DIM NUMBER IS OUT OF BOUNDS "+dimNumber);
 		}
 
 		/**
@@ -2313,7 +2313,7 @@ public class NmrPipeReader {
 			
 			else
 				
-				return Integer.MIN_VALUE;
+				throw new IllegalArgumentException("DIM NUMBER IS OUT OF BOUNDS "+dimNumber);
 		}
 
 		/**
@@ -2343,7 +2343,7 @@ public class NmrPipeReader {
 			
 			else
 				
-				return Float.NaN;
+				throw new IllegalArgumentException("DIM NUMBER IS OUT OF BOUNDS "+dimNumber);
 		}
 
 		/**
@@ -2373,7 +2373,7 @@ public class NmrPipeReader {
 			
 			else
 				
-				return Float.NaN;
+				throw new IllegalArgumentException("DIM NUMBER IS OUT OF BOUNDS "+dimNumber);
 		}
 
 		/**
@@ -2406,7 +2406,7 @@ public class NmrPipeReader {
 			
 			else
 				
-				return 0;
+				throw new IllegalArgumentException("DIM NUMBER IS OUT OF BOUNDS "+dimNumber);
 		}
 
 		/**
@@ -2436,7 +2436,7 @@ public class NmrPipeReader {
 			
 			else
 				
-				return Float.NaN;
+				throw new IllegalArgumentException("DIM NUMBER IS OUT OF BOUNDS "+dimNumber);
 		}
 
 		// Find nrmpipe .c/.h code to verify all the formats I think exist
