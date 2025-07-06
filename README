@@ -26,6 +26,6 @@ How to include zorbage-nmr in your Maven project
 How to include zorbage-nmr in a different build system
 
   See https://search.maven.org/artifact/io.github.bdezonia/zorbage-nmr/0.0.5/jar
-  for instructions on how to reference zorbage-netcdf in build systems such as
+  for instructions on how to reference zorbage-nmr in build systems such as
   Gradle or others.
 
