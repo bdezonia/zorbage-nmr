@@ -415,17 +415,17 @@ public class PipeToTextReader {
 		
 		int numDecimalCols = fileMetaData.b();
 
-		if (numDecimalCols < 1) {
+		if (numDecimalCols <= 0) {
 
 			throw
 				new IllegalArgumentException(
 						"text file must have a positive data column count");
 		}
-		else if (numDecimalCols <= 1) {
+		else if (numDecimalCols == 1) {
 			
 			bundle.dbls.add( readDouble(filename) );
 		}
-		else if (numDecimalCols <= 2) {
+		else if (numDecimalCols == 2) {
 			
 			bundle.cdbls.add( readComplexDouble(filename) );
 		}
@@ -440,7 +440,9 @@ public class PipeToTextReader {
 		else {  // if here it must be > 8 components
 			
 			// NMRPipe defines numbers up to 16 components. For anything
-			// bigger than 8 let's just read them as Points.
+			// bigger than 8 let's just read them as Points because as
+			// of yet we do not have hypercomplex support for more than
+			// 8 components.
 			
 			bundle.points.add( readPoints(filename, numDecimalCols) );
 		}
