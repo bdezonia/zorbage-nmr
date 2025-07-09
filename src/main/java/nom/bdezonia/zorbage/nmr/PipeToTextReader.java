@@ -42,6 +42,7 @@ import nom.bdezonia.zorbage.sampling.IntegerIndex;
 import nom.bdezonia.zorbage.sampling.RealIndex;
 import nom.bdezonia.zorbage.tuple.Tuple4;
 import nom.bdezonia.zorbage.type.complex.float64.ComplexFloat64Member;
+import nom.bdezonia.zorbage.type.geom.point.Point;
 import nom.bdezonia.zorbage.type.octonion.float64.OctonionFloat64Member;
 import nom.bdezonia.zorbage.type.quaternion.float64.QuaternionFloat64Member;
 import nom.bdezonia.zorbage.type.real.float64.Float64Member;
@@ -189,7 +190,7 @@ public class PipeToTextReader {
 	
 		DimensionedDataSource<U>
 	
-			read(String filename, T alg)
+			read(String filename, T alg, U val)
 	{
 		Tuple4<Integer,Integer,IntegerIndex,IntegerIndex> metadata = readMetadata(filename);
 
@@ -214,8 +215,6 @@ public class PipeToTextReader {
 		IntegerIndex minDims = metadata.c();
 		
 		IntegerIndex maxDims = metadata.d();
-		
-		U val = alg.construct();
 		
 		FileReader fr = null;
 		
@@ -330,7 +329,7 @@ public class PipeToTextReader {
 			readDouble(String filename)
 	{
 		
-		return PipeToTextReader.read(filename, G.DBL);
+		return PipeToTextReader.read(filename, G.DBL, G.DBL.construct());
 	}
 
 	/**
@@ -345,7 +344,7 @@ public class PipeToTextReader {
 	
 			readComplexDouble(String filename)
 	{
-		return PipeToTextReader.read(filename, G.CDBL);
+		return PipeToTextReader.read(filename, G.CDBL, G.CDBL.construct());
 	}
 
 	/**
@@ -360,7 +359,7 @@ public class PipeToTextReader {
 	
 			readQuaternionDouble(String filename)
 	{
-		return PipeToTextReader.read(filename, G.QDBL);
+		return PipeToTextReader.read(filename, G.QDBL, G.QDBL.construct());
 	}
 	
 	/**
@@ -375,14 +374,30 @@ public class PipeToTextReader {
 	
 			readOctonionDouble(String filename)
 	{
-		return PipeToTextReader.read(filename, G.ODBL);
+		return PipeToTextReader.read(filename, G.ODBL, G.ODBL.construct());
 	}
+
+	/**
+	 * Open a NMRPipe text file as point data.
+	 * 
+	 * @param filename
+	 * @param numDecimalCols
+	 * @return
+	 */
+	public static
 	
+		DimensionedDataSource<Point>
+	
+			readPoints(String filename, int numDecimalCols)
+	{
+		return PipeToTextReader.read(filename, G.POINT, new Point(numDecimalCols));
+	}
+
 	/**
 	 * Open an NMRPipe text file and return it in a DataBundle.
 	 * Depending upon the number of data columns in the file
-	 * this routine can create real, complex, quaternion, or
-	 * octonion data sets.
+	 * this routine can create real, complex, quaternion,
+	 * octonion, or point data sets.
 	 * 
 	 * @param filename
 	 * @return
@@ -400,11 +415,11 @@ public class PipeToTextReader {
 		
 		int numDecimalCols = fileMetaData.b();
 
-		if (numDecimalCols < 1 || numDecimalCols > 8) {
+		if (numDecimalCols < 1) {
 
 			throw
 				new IllegalArgumentException(
-						"text file must have data column count between 1 and 8");
+						"text file must have a positive data column count");
 		}
 		else if (numDecimalCols <= 1) {
 			
@@ -418,9 +433,16 @@ public class PipeToTextReader {
 			
 			bundle.qdbls.add( readQuaternionDouble(filename) );
 		}
-		else {  // if here it must be between 5 and 8 components
+		else if (numDecimalCols <= 8) {
 			
 			bundle.odbls.add( readOctonionDouble(filename) );
+		}
+		else {  // if here it must be > 8 components
+			
+			// NMRPipe defines numbers up to 16 components. For anything
+			// bigger than 8 let's just read them as Points.
+			
+			bundle.points.add( readPoints(filename, numDecimalCols) );
 		}
 		
 		return bundle;
