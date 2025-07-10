@@ -2703,9 +2703,9 @@ public class NmrPipeReader {
 				throw new IllegalArgumentException("project() given mismatched dimensionalities");
 
 			final long pos;
-			if (axis == 1)
-				pos = data.dimension(1) - 1 - coord[1];
-			else
+			//if (axis == 1)
+			//	pos = data.dimension(1) - 1 - coord[1];
+			//else
 				pos = coord[axis];
 			final long u = pos + 1;
 			
@@ -2719,9 +2719,9 @@ public class NmrPipeReader {
 				throw new IllegalArgumentException("project() given mismatched dimensionalities");
 
 			final long pos;
-			if (axis == 1)
-				pos = data.dimension(1) - 1 - coord.get(1);
-			else
+			//if (axis == 1)
+			//	pos = data.dimension(1) - 1 - coord.get(1);
+			//else
 				pos = coord.get(axis);
 			final long u = pos + 1;
 			
