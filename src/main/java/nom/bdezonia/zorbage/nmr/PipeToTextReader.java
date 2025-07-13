@@ -170,7 +170,7 @@ public class PipeToTextReader {
 
 	/**
 	 * Read a NMRPipe exported text file where each row is
-	 *  <dim number 1> <dim number 2> ... <data val 1> <optional data val 2>
+	 *  (dim number 1) (dim number 2) ... (data val 1) (optional data val 2)
 	 * and return a type of data source based upon the algebra you pass in
 	 * to this reader. The file layout is based on some extraction or
 	 * conversion of NmrPipe data. This reader can make a gridded

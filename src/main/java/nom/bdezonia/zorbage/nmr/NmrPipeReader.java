@@ -91,7 +91,7 @@ public class NmrPipeReader {
 
 	/**
 	 * 
-	 * @param filename
+	 * @param fileURI
 	 * @return
 	 */
 	public static
