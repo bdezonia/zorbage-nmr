@@ -36,6 +36,7 @@ import java.net.URISyntaxException;
 import nom.bdezonia.zorbage.algebra.Algebra;
 import nom.bdezonia.zorbage.algebra.G;
 import nom.bdezonia.zorbage.coordinates.CoordinateSpace;
+import nom.bdezonia.zorbage.coordinates.LinearNdCoordinateSpace;
 import nom.bdezonia.zorbage.data.DimensionedDataSource;
 import nom.bdezonia.zorbage.data.NdData;
 import nom.bdezonia.zorbage.datasource.IndexedDataSource;
@@ -132,16 +133,8 @@ public class NmrPipeReader {
 			
 			bundle.qflts.add(nd);
 		}
-		else if (data.a().equals("point")) {
-			
-			// TODO: I think it is impossible to get here but not sure. As far as
-			//   I can tell this is only possible if data is 4d and all axes are
-			//   freq dims. But nmrpipe code seems to imply only y/z/a can be freq.
-			
-			throw new IllegalArgumentException("Not yet supporting "+data.b()+" dim point data");
-		}
 		else
-			throw new IllegalArgumentException("Unknown output data type: "+data.a());
+			throw new IllegalArgumentException("Unsupported output data type: "+data.a());
 		
 		return bundle;
 	}
@@ -658,7 +651,11 @@ public class NmrPipeReader {
 			data.setAxisUnit(i, data.metadata().getString("dim "+i+" unit"));
 		}
 		
-		data.setCoordinateSpace(new PipeSpace(data));
+		PipeSpace pipeSpace = new PipeSpace(data);
+
+		//data.setCoordinateSpace( pipeSpace );
+		
+		data.setCoordinateSpace( linearSpace(data, pipeSpace) );
 	}
 	
 	/**
@@ -811,21 +808,17 @@ public class NmrPipeReader {
 				return new Tuple2<>("complex", numComponents);
 			}
 			
-			// if here then numComponents == 4 or 8 or 16: hyper complex numbers
+			if (numComponents == 4) {
+				return new Tuple2<>("hypercomplex4", numComponents);
+			}
 			
-			// TODO: someday when hyper complex numbers are supported
-
-			//if (numComponents == 4) {
-			//	return new Tuple2<>("hypercomplex4", numComponents);
-			//}
+			if (numComponents == 8) {
+				return new Tuple2<>("hypercomplex8", numComponents);
+			}
 			
-			//if (numComponents == 8) {
-			//	return new Tuple2<>("hypercomplex8", numComponents);
-			//}
-			
-			//if (numComponents == 16) {
-			//	return new Tuple2<>("hypercomplex16", numComponents);
-			//}
+			if (numComponents == 16) {
+				return new Tuple2<>("hypercomplex16", numComponents);
+			}
 
 			// general fallback
 			
@@ -1234,7 +1227,7 @@ public class NmrPipeReader {
 		 * 
 		 * @return
 		 */
-		int domInfo() {  // float?
+		int domInfo() {  // TODO float?
 			
 			return getHeaderInt(FDDOMINFO);
 		}
@@ -1243,7 +1236,7 @@ public class NmrPipeReader {
 		 * 
 		 * @return
 		 */
-		int methInfo() {  // float?
+		int methInfo() {  // TODO float?
 			
 			return getHeaderInt(FDMETHINFO);
 		}
@@ -2382,7 +2375,7 @@ public class NmrPipeReader {
 		 * @return
 		 */
 		
-		// TODO: should this be an int? can't determine from nmrglue it nmrdraw fdatap.h file
+		// TODO: should this be an int? can't determine from nmrglue or nmrdraw fdatap.h file
 		
 		int aqSign(int dimNumber) {
 
@@ -2751,5 +2744,44 @@ public class NmrPipeReader {
 
 			this.context = new MathContext(decimalPlaces);
 		}
+	}
+	
+	private static
+	
+		LinearNdCoordinateSpace
+	 
+	 		linearSpace(
+	 				
+	 			DimensionedDataSource<?> data,
+	 			PipeSpace pipeSpace
+	 		)
+	{
+		MathContext context = new MathContext(8);
+		
+		int numD = data.numDimensions();
+		
+		BigDecimal[] scales = new BigDecimal[numD];
+		
+		BigDecimal[] offsets = new BigDecimal[numD];
+
+		// NOTE that the question marked code below perfectly
+		//   matches the coords of the PipeSpace code. But that
+		//   code might be slightly wrong and maybe I should use
+		//   (0,len-1) or (1,len) here. I must precisely measure
+		//   from the ft2 in some other package to know how to
+		//   proceed.
+		
+		for (int i = 0; i < numD; i++) {
+			
+			offsets[i] = pipeSpace.project(1, i);  // 0 or 1?
+			
+			long length = data.dimension(i);
+			
+			BigDecimal extremum = pipeSpace.project(length, i); // len or len-1?
+			
+			scales[i] = (extremum.subtract(offsets[i]).divide(BigDecimal.valueOf(length-1), context)); // len or len-1? 
+		}
+		
+		return new LinearNdCoordinateSpace(scales, offsets);
 	}
 }
