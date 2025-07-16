@@ -2669,7 +2669,7 @@ public class NmrPipeReader {
 			
 			this.data = data;
 			
-			this.context = new MathContext(5);
+			this.context = new MathContext(8);
 		}
 
 		@Override
@@ -2764,22 +2764,26 @@ public class NmrPipeReader {
 		
 		BigDecimal[] offsets = new BigDecimal[numD];
 
-		// NOTE that the question marked code below perfectly
-		//   matches the coords of the PipeSpace code. But that
-		//   code might be slightly wrong and maybe I should use
-		//   (0,len-1) or (1,len) here. I must precisely measure
-		//   from the ft2 in some other package to know how to
-		//   proceed.
+		// There is slight inaccuracy for us versus PipeSpace
+		// and nmrglue. Differences in like the 5th decimal place.
+		// Maybe because of floats vs doubles vs BigDecimals???
+		// PipeSpace and nmrglue match exactly. This code is ever
+		// slightly off. I alread trie all combos of 0/1, len/len-1,
+		// and len/len-1 in the tree key lines below and landed on
+		// the best combo.
 		
 		for (int i = 0; i < numD; i++) {
 			
-			offsets[i] = pipeSpace.project(1, i);  // 0 or 1?
+			offsets[i] = pipeSpace.project(1, i);
 			
 			long length = data.dimension(i);
 			
-			BigDecimal extremum = pipeSpace.project(length, i); // len or len-1?
+			BigDecimal extremum = pipeSpace.project(length, i);
 			
-			scales[i] = (extremum.subtract(offsets[i]).divide(BigDecimal.valueOf(length-1), context)); // len or len-1? 
+			if (length == 1)
+				scales[i] = BigDecimal.ONE;
+			else
+				scales[i] = (extremum.subtract(offsets[i]).divide(BigDecimal.valueOf(length-1), context)); 
 		}
 		
 		return new LinearNdCoordinateSpace(scales, offsets);
