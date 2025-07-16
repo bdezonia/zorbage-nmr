@@ -2768,9 +2768,13 @@ public class NmrPipeReader {
 		// and nmrglue. Differences in like the 5th decimal place.
 		// Maybe because of floats vs doubles vs BigDecimals???
 		// PipeSpace and nmrglue match exactly. This code is ever
-		// slightly off. I alread trie all combos of 0/1, len/len-1,
-		// and len/len-1 in the tree key lines below and landed on
+		// slightly off. I already tried all combos of 0/1, len/len-1,
+		// and len/len-1 in the three key lines below and landed on
 		// the best combo.
+		// LATER: I tested the code using floats to see if that is
+		// the source of the inaccuracy and it is not! Mysterious.
+		// Maybe there is a nonlinearity in PipeSpace that does not
+		// translate well to linear 2d space?????
 		
 		for (int i = 0; i < numD; i++) {
 			
