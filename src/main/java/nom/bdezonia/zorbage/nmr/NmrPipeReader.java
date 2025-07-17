@@ -650,10 +650,12 @@ public class NmrPipeReader {
 				numComponents += elemsPerAxis(3);  // TODO: *= if multiplicative
 			
 			if (numComponents == 1) {
+				
 				return new Tuple2<>("real", numComponents);
 			}
 			
 			if (numComponents == 2) {
+				
 				return new Tuple2<>("complex", numComponents);
 			}
 			
