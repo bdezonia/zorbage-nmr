@@ -50,7 +50,6 @@ import nom.bdezonia.zorbage.storage.Storage;
 import nom.bdezonia.zorbage.tuple.Tuple2;
 import nom.bdezonia.zorbage.tuple.Tuple5;
 import nom.bdezonia.zorbage.type.complex.float32.ComplexFloat32Member;
-import nom.bdezonia.zorbage.type.quaternion.float32.QuaternionFloat32Member;
 import nom.bdezonia.zorbage.type.real.float32.Float32Member;
 
 /**
@@ -124,14 +123,6 @@ public class NmrPipeReader {
 			nd.setSource(fileURI.toString());
 			
 			bundle.cflts.add(nd);
-		}
-		else if (data.a().equals("quaternion")) {
-			
-			NdData<QuaternionFloat32Member> nd = quaternionDataSource(data.b(), data.c(), data.d(), data.e());
-
-			nd.setSource(fileURI.toString());
-			
-			bundle.qflts.add(nd);
 		}
 		else
 			throw new IllegalArgumentException("Unsupported output data type: "+data.a());
@@ -430,150 +421,6 @@ public class NmrPipeReader {
 
 	/**
 	 * 
-	 * @param numComponents
-	 * @param rawDims
-	 * @param numbers
-	 * @param metadata
-	 * @return
-	 */
-	private static
-	
-		NdData<QuaternionFloat32Member>
-	
-			quaternionDataSource(int numComponents, long[] rawDims, IndexedDataSource<Float32Member> numbers, MetaDataStore metadata)
-	{
-		if (numComponents != 4 || (numbers.size() % 4) != 0)
-			throw new IllegalArgumentException("suspicious input to quaternion data source allocation routine");
-
-		IndexedDataSource<QuaternionFloat32Member> quats =
-
-				Storage.allocate(G.QFLT.construct(), numbers.size() / 4);
-		
-		QuaternionFloat32Member quat = G.QFLT.construct();
-		
-		Float32Member value = G.FLT.construct();
-		
-		long[] dims = rawDims.clone();
-
-		// due to earlier code calls dims guaranteed to be between 1 and 4
-		
-		if (rawDims.length == 1 || rawDims.length == 2) {
-			
-			// from NMRPipe's fdatap.h header file:
-			
-			// 2D Hypercomplex Plane File;
-			// X-Axis N Complex Points and Y-Axis M Complex points:
-			// 
-			//   (2048-byte FDATA file header)
-			//   (N X-Axis=Real Values for Y-Axis Increment 1 Real)
-			//   (N X-Axis=Imag Values for Y-Axis Increment 1 Real)
-			//   (N X-Axis=Real Values for Y-Axis Increment 1 Imag)
-			//   (N X-Axis=Imag Values for Y-Axis Increment 1 Imag)
-			//   (N X-Axis=Real Values for Y-Axis Increment 2 Real)
-			//   (N X-Axis=Imag Values for Y-Axis Increment 2 Real)
-			//   (N X-Axis=Real Values for Y-Axis Increment 2 Imag)
-			//   (N X-Axis=Imag Values for Y-Axis Increment 2 Imag)
-			//   ...
-			//   (N X-Axis=Real Values for Y-Axis Increment M Real)
-			//   (N X-Axis=Imag Values for Y-Axis Increment M Real)
-			//   (N X-Axis=Real Values for Y-Axis Increment M Imag)
-			//   (N X-Axis=Imag Values for Y-Axis Increment M Imag)
-			
-			// adjust the dims
-			
-			if (rawDims.length == 1)
-				dims[0] /= 4;
-			else
-				dims[1] /= 4;
-
-			long n = 0;
-			
-			long numX = dims[0];
-
-			long numY = rawDims.length == 1 ? 1 : dims[1];  // I'm extending 2d to 1d
-
-			for (long y = 0; y < numY; y++) {
-
-				// read R values
-				
-				for (long x = 0; x < numX; x++) {
-					
-					numbers.get(n++, value);
-					
-					quats.get(y * numX + x, quat);
-					
-					quat.setR(value);
-
-					quats.set(y * numX + x, quat);
-				}
-				
-				// read I values
-				
-				for (long x = 0; x < numX; x++) {
-					
-					numbers.get(n++, value);
-					
-					quats.get(y * numX + x, quat);
-					
-					quat.setI(value);
-
-					quats.set(y * numX + x, quat);
-				}
-				
-				// read J values
-				
-				for (long x = 0; x < numX; x++) {
-					
-					numbers.get(n++, value);
-					
-					quats.get(y * numX + x, quat);
-					
-					quat.setJ(value);
-
-					quats.set(y * numX + x, quat);
-				}
-				
-				// read K values
-				
-				for (long x = 0; x < numX; x++) {
-					
-					numbers.get(n++, value);
-					
-					quats.get(y * numX + x, quat);
-					
-					quat.setK(value);
-
-					quats.set(y * numX + x, quat);
-				}
-			}
-		}
-		else {
-			
-			// TODO read the data in the correct interleaved way
-			
-			// num dims == 3 or 4: data must be read from additional files.
-			//   Although maybe nmrpipe supports a 3d or 4d all in one file facility.
-			
-			// adjust the dims
-			
-			dims[1] /= 4;  // TODO: is this index right?
-
-			throw new IllegalArgumentException("quaternion 3d or 4d case not yet implemented");
-		}
-		
-		NdData<QuaternionFloat32Member> nd = new NdData<>(dims, quats);
-		
-		nd.metadata().merge(metadata);
-		
-		flipAroundY(G.QFLT, nd);
-		
-		setUnitsEtc(nd);
-		
-		return nd;
-	}
-	
-	/**
-	 * 
 	 * @param <T>
 	 * @param <U>
 	 * @param algebra
@@ -786,19 +633,21 @@ public class NmrPipeReader {
 			if (dimCount < 1 || dimCount > 4)
  				throw new IllegalArgumentException("dim count looks crazy "+dimCount);
 			
-			int numComponents = 1;
+			// TODO: should these be additive instead of multiplicative? So 1 to 8 by 1 instead of 1 to 16 by factors of 2?
+			
+			int numComponents = 0;  // TODO: 1 if multiplicative
 
 			if (dimCount >= 1)
-				numComponents *= elemsPerAxis(0);
+				numComponents += elemsPerAxis(0);  // TODO: *= if multiplicative
 
 			if (dimCount >= 2)
-				numComponents *= elemsPerAxis(1);
+				numComponents += elemsPerAxis(1);  // TODO: *= if multiplicative
 
 			if (dimCount >= 3)
-				numComponents *= elemsPerAxis(2);
+				numComponents += elemsPerAxis(2);  // TODO: *= if multiplicative
 
 			if (dimCount >= 4)
-				numComponents *= elemsPerAxis(3);
+				numComponents += elemsPerAxis(3);  // TODO: *= if multiplicative
 			
 			if (numComponents == 1) {
 				return new Tuple2<>("real", numComponents);
@@ -808,21 +657,7 @@ public class NmrPipeReader {
 				return new Tuple2<>("complex", numComponents);
 			}
 			
-			if (numComponents == 4) {
-				return new Tuple2<>("hypercomplex4", numComponents);
-			}
-			
-			if (numComponents == 8) {
-				return new Tuple2<>("hypercomplex8", numComponents);
-			}
-			
-			if (numComponents == 16) {
-				return new Tuple2<>("hypercomplex16", numComponents);
-			}
-
-			// general fallback
-			
-			return new Tuple2<>("point", numComponents);
+			return new Tuple2<>("hypercomplex", numComponents);
 		}
 
 		// TODO: comparing to nmr pipe showhdr command I am assigning x, y, and z
