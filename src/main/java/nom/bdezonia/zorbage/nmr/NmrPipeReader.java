@@ -633,21 +633,25 @@ public class NmrPipeReader {
 			if (dimCount < 1 || dimCount > 4)
  				throw new IllegalArgumentException("dim count looks crazy "+dimCount);
 			
-			// TODO: should these be additive instead of multiplicative? So 1 to 8 by 1 instead of 1 to 16 by factors of 2?
+			// NOTE
+			// I have talked to Frank Delaglio a number of times and I still
+			// don't know if this is correct. In one discussion he seemed to
+			// imply in ND cases you might get a set of values that aren't
+			// evenly divisible into powers of two.
 			
-			int numComponents = 0;  // TODO: 1 if multiplicative
+			int numComponents = 1;
 
 			if (dimCount >= 1)
-				numComponents += elemsPerAxis(0);  // TODO: *= if multiplicative
+				numComponents *= elemsPerAxis(0);
 
 			if (dimCount >= 2)
-				numComponents += elemsPerAxis(1);  // TODO: *= if multiplicative
+				numComponents *= elemsPerAxis(1);
 
 			if (dimCount >= 3)
-				numComponents += elemsPerAxis(2);  // TODO: *= if multiplicative
+				numComponents *= elemsPerAxis(2);
 
 			if (dimCount >= 4)
-				numComponents += elemsPerAxis(3);  // TODO: *= if multiplicative
+				numComponents *= elemsPerAxis(3);
 			
 			if (numComponents == 1) {
 				
@@ -1061,21 +1065,57 @@ public class NmrPipeReader {
 	    }
 
 	    /**
+		 * Some flags : four 1-bit flags in bits 1-4
 		 * 
-		 * @return
+		 * @return boolean of flag status. true = on and false = off.
 		 */
-		int domInfo() {  // TODO float?
+		boolean domInfo(int dimNumber) {
 			
-			return getHeaderInt(FDDOMINFO);
+			int flags = (int) getHeaderFloat(FDDOMINFO);
+					
+			int idx = dimIndex(dimNumber);
+			
+			if (idx == 1)
+				return (flags & 1) > 0;
+
+			if (idx == 2)
+				return (flags & 2) > 0;
+		
+			if (idx == 3)
+				return (flags & 4) > 0;
+	
+			if (idx == 4)
+				return (flags & 8) > 0;
+			
+			throw new IllegalArgumentException(
+					"weird indexing error in domInfo()");
 		}
 		
 		/**
+		 * Some more flags : four 1-bit flags in bits 1-4
 		 * 
 		 * @return
 		 */
-		int methInfo() {  // TODO float?
+		boolean methInfo(int dimNumber) {
 			
-			return getHeaderInt(FDMETHINFO);
+			int flags = (int) getHeaderFloat(FDMETHINFO);
+					
+			int idx = dimIndex(dimNumber);
+			
+			if (idx == 1)
+				return (flags & 1) > 0;
+
+			if (idx == 2)
+				return (flags & 2) > 0;
+		
+			if (idx == 3)
+				return (flags & 4) > 0;
+	
+			if (idx == 4)
+				return (flags & 8) > 0;
+			
+			throw new IllegalArgumentException(
+					"weird indexing error in methInfo()");
 		}
 		
 		/**
@@ -2211,8 +2251,6 @@ public class NmrPipeReader {
 		 * @param dimNumber
 		 * @return
 		 */
-		
-		// TODO: should this be an int? can't determine from nmrglue or nmrdraw fdatap.h file
 		
 		int aqSign(int dimNumber) {
 
