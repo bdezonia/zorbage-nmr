@@ -501,8 +501,45 @@ public class NmrPipeReader {
 		PipeSpace pipeSpace = new PipeSpace(data);
 
 		//data.setCoordinateSpace( pipeSpace );
+
+		LinearNdCoordinateSpace linSpace = linearSpace(data, pipeSpace); 
+
+		data.setCoordinateSpace( linSpace );
+
+		/*
 		
-		data.setCoordinateSpace( linearSpace(data, pipeSpace) );
+		// test code to see inaccuracy in linSpace vs pipeSpace
+
+		long[] coord = new long[2];
+		BigDecimal[] measure = new BigDecimal[2];
+		System.out.println("PIPE");
+		coord[0] = 0; coord[1] = 0;
+		pipeSpace.project(coord, measure);
+		System.out.println("("+coord[0]+","+coord[1]+") = "+measure[0]+" "+measure[1]);
+		coord[0] = 400; coord[1] = 400;
+		pipeSpace.project(coord, measure);
+		System.out.println("("+coord[0]+","+coord[1]+") = "+measure[0]+" "+measure[1]);
+		coord[0] = 1400; coord[1] = 1400;
+		pipeSpace.project(coord, measure);
+		System.out.println("("+coord[0]+","+coord[1]+") = "+measure[0]+" "+measure[1]);
+		coord[0] = 2001; coord[1] = 2001;
+		pipeSpace.project(coord, measure);
+		System.out.println("("+coord[0]+","+coord[1]+") = "+measure[0]+" "+measure[1]);
+		System.out.println("LINEAR");
+		coord[0] = 0; coord[1] = 0;
+		linSpace.project(coord, measure);
+		System.out.println("("+coord[0]+","+coord[1]+") = "+measure[0]+" "+measure[1]);
+		coord[0] = 400; coord[1] = 400;
+		linSpace.project(coord, measure);
+		System.out.println("("+coord[0]+","+coord[1]+") = "+measure[0]+" "+measure[1]);
+		coord[0] = 1400; coord[1] = 1400;
+		linSpace.project(coord, measure);
+		System.out.println("("+coord[0]+","+coord[1]+") = "+measure[0]+" "+measure[1]);
+		coord[0] = 2001; coord[1] = 2001;
+		linSpace.project(coord, measure);
+		System.out.println("("+coord[0]+","+coord[1]+") = "+measure[0]+" "+measure[1]);
+
+		*/
 	}
 	
 	/**
