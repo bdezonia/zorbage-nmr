@@ -23,9 +23,7 @@
  */
 package nom.bdezonia.zorbage.nmr;
 
-import nom.bdezonia.zorbage.data.DimensionedDataSource;
 import nom.bdezonia.zorbage.misc.DataBundle;
-import nom.bdezonia.zorbage.type.real.float32.Float32Member;
 
 /**
  * @author Barry DeZonia
