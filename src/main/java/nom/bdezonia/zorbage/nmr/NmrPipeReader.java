@@ -502,7 +502,7 @@ public class NmrPipeReader {
 
 		//data.setCoordinateSpace( pipeSpace );
 
-		LinearNdCoordinateSpace linSpace = linearSpace(data, pipeSpace); 
+		LinearNdCoordinateSpace linSpace = linearSpace(data, pipeSpace);
 
 		data.setCoordinateSpace( linSpace );
 
@@ -2590,16 +2590,20 @@ public class NmrPipeReader {
 			return data.numDimensions();
 		}
 
+		// NOTE: we are expecting 0-based pos
+		
 		private BigDecimal project(long pos, int axis) {
 			
 			BigDecimal orig = BigDecimal.valueOf(data.metadata().getFloat("dim "+axis+" offset"));
 			BigDecimal sw = BigDecimal.valueOf(data.metadata().getFloat("dim "+axis+" sweep width"));
 			BigDecimal obs = BigDecimal.valueOf(data.metadata().getFloat("dim "+axis+" obs freq"));
-			BigDecimal numer = BigDecimal.valueOf(data.dimension(axis) - pos);
-			BigDecimal denom = BigDecimal.valueOf(data.dimension(axis));
+			BigDecimal numer = BigDecimal.valueOf(data.dimension(axis) - 1 - pos);
+			BigDecimal denom = BigDecimal.valueOf(data.dimension(axis) - 1);
 			
 			return orig.add(sw.multiply(numer).divide(denom, context)).divide(obs, context);
 		}
+
+		// NOTE; coords are 0-based offsets from origin
 		
 		@Override
 		public BigDecimal project(long[] coord, int axis) {
@@ -2607,32 +2611,22 @@ public class NmrPipeReader {
 			if (axis < 0 || axis >= data.numDimensions())
 				throw new IllegalArgumentException("project() given mismatched dimensionalities");
 
-			final long pos;
-			//if (axis == 1)
-			//	pos = data.dimension(1) - 1 - coord[1];
-			//else
-				pos = coord[axis];
-			final long u = pos + 1;
-			
-			return project(u, axis);
+			return project(coord[axis], axis);
 		}
 
+		// NOTE; coords are 0-based offsets from origin
+		
 		@Override
 		public BigDecimal project(IntegerIndex coord, int axis) {
 			
 			if (axis < 0 || axis >= data.numDimensions())
 				throw new IllegalArgumentException("project() given mismatched dimensionalities");
 
-			final long pos;
-			//if (axis == 1)
-			//	pos = data.dimension(1) - 1 - coord.get(1);
-			//else
-				pos = coord.get(axis);
-			final long u = pos + 1;
-			
-			return project(u, axis);
+			return project(coord.get(axis), axis);
 		}
 
+		// NOTE; coords are 0-based offsets from origin
+		
 		@Override
 		public void project(long[] coord, BigDecimal[] output) {
 
@@ -2642,6 +2636,8 @@ public class NmrPipeReader {
 			}
 		}
 
+		// NOTE; coords are 0-based offsets from origin
+		
 		@Override
 		public void project(IntegerIndex coord, BigDecimal[] output) {
 
@@ -2657,6 +2653,10 @@ public class NmrPipeReader {
 			this.context = new MathContext(decimalPlaces);
 		}
 	}
+
+	// NOTE: there may be minor inaccuracies here because
+	//   nmrPipe has a flaw in calc of the denominator and
+	//   nmrGlua might copy it. The code below is correct.
 	
 	private static
 	
@@ -2676,30 +2676,20 @@ public class NmrPipeReader {
 		
 		BigDecimal[] offsets = new BigDecimal[numD];
 
-		// There is slight inaccuracy for us versus PipeSpace
-		// and nmrglue. Differences in like the 5th decimal place.
-		// Maybe because of floats vs doubles vs BigDecimals???
-		// PipeSpace and nmrglue match exactly. This code is ever
-		// slightly off. I already tried all combos of 0/1, len/len-1,
-		// and len/len-1 in the three key lines below and landed on
-		// the best combo.
-		// LATER: I tested the code using floats to see if that is
-		// the source of the inaccuracy and it is not! Mysterious.
-		// Maybe there is a nonlinearity in PipeSpace that does not
-		// translate well to linear 2d space?????
-		
 		for (int i = 0; i < numD; i++) {
 			
-			offsets[i] = pipeSpace.project(1, i);
+			offsets[i] = pipeSpace.project(0, i);
 			
 			long length = data.dimension(i);
 			
-			BigDecimal extremum = pipeSpace.project(length, i);
+			BigDecimal extremum = pipeSpace.project(length-1, i);
 			
-			if (length == 1)
+			if (length < 1)
+				throw new IllegalArgumentException("data dimension number "+i+" is less than 1");
+			else if (length == 1)
 				scales[i] = BigDecimal.ONE;
 			else
-				scales[i] = (extremum.subtract(offsets[i]).divide(BigDecimal.valueOf(length-1), context)); 
+				scales[i] = (extremum.subtract(offsets[i]).divide(BigDecimal.valueOf(length-1), context));
 		}
 		
 		return new LinearNdCoordinateSpace(scales, offsets);
