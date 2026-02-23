@@ -2598,7 +2598,9 @@ public class NmrPipeReader {
 			BigDecimal sw = BigDecimal.valueOf(data.metadata().getFloat("dim "+axis+" sweep width"));
 			BigDecimal obs = BigDecimal.valueOf(data.metadata().getFloat("dim "+axis+" obs freq"));
 			BigDecimal numer = BigDecimal.valueOf(data.dimension(axis) - 1 - pos);
-			BigDecimal denom = BigDecimal.valueOf(data.dimension(axis) - 1);
+			// This looks wrong but I have gone to great lengths with nmrpipe info
+			// to prove it is right. You do not need to subtract 1 from size.
+			BigDecimal denom = BigDecimal.valueOf(data.dimension(axis));
 			
 			return orig.add(sw.multiply(numer).divide(denom, context)).divide(obs, context);
 		}
